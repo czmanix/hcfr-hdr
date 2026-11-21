@@ -784,7 +784,7 @@ void CGraphControl::DrawGraphs(CDC *pDC, CRect rect)
 					str.Format("%.2f %s: %.3f ", m_graphArray[j].m_pointArray[i].x, ( m_pXUnitStr ? m_pXUnitStr : (GetConfig()->m_PercentGray) ), m_graphArray[j].m_pointArray[i].y);
 					//add absolute luminance for luminance plots
 					if(m_pYUnitStr)
-						str+=m_pYUnitStr;
+						str+=(strstr(m_pYUnitStr, "cd m-2") != NULL) ? " cd/m^2" : m_pYUnitStr;
 				}
 
 				if (m_graphArray[j].m_pointArray[i].Y > 0.0)
@@ -895,6 +895,9 @@ void CGraphControl::DrawAxis(CDC *pDC, CRect rect, BOOL bWhiteBkgnd)
 	}
 	double yVal=m_minY;
 	double lastStrEndY=GetGraphY(yVal,rect);
+	BOOL bNits = m_pYUnitStr && strstr(m_pYUnitStr, "cd m-2") != NULL;
+	CArray<int,int> nitsLabelY;
+	CStringArray nitsLabelStr;
 	for(int i=0;i<(m_maxY-m_minY)/m_yAxisStep;i++)
 	{
 		int y=GetGraphY(yVal,rect);
@@ -907,16 +910,25 @@ void CGraphControl::DrawAxis(CDC *pDC, CRect rect, BOOL bWhiteBkgnd)
 		{
 			CString str;
 			str.Format("%g",yVal);
-			if(m_pYUnitStr)
+			if(m_pYUnitStr && !bNits)
 				str+=m_pYUnitStr;
-			if(i && y < lastStrEndY)
+			if(i && y < lastStrEndY && (!bNits || y - pDC->GetTextExtent(str).cy >= rect.top))
 			{
-				pDC->TextOut(2,y,str);
+				if (bNits)
+				{
+					nitsLabelY.Add(y);
+					nitsLabelStr.Add(str);
+				}
+				else
+					pDC->TextOut(2,y,str);
 				lastStrEndY=y-pDC->GetTextExtent(str).cy+2;
 			}
 		}
 		yVal+=m_yAxisStep;
 	}
+	// cd/m2 axis: the unit only on the highest label, as on the log axis
+	for (int n = 0; n < nitsLabelY.GetSize(); n++)
+		pDC->TextOut(2, nitsLabelY[n], n + 1 == nitsLabelY.GetSize() ? nitsLabelStr[n] + " cd/m²" : nitsLabelStr[n]);
 
 	pDC->SelectObject(pOldPen);
 	pDC->SelectObject(pOldFont);
