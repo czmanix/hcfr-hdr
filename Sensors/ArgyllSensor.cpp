@@ -192,9 +192,10 @@ void CArgyllSensor::Serialize(CArchive& archive)
             // otherwise exit so that we get the simulated meter
             CString meterName;
             archive >> meterName;
+            // (an informational message box naming the meter used to pop up here once per
+            // detected meter on every file open; the meter name is shown in the Sensor box)
             for(size_t i(0); i < meters.size(); ++i)
             {
-			    GetColorApp()->InMeasureMessageBox( meterName, "Argyll Meter used during this session...", MB_OK+MB_ICONHAND);
                 if(meters[i]->getMeterName().c_str() == meterName)
                 {
                     m_meter = meters[i];
