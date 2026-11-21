@@ -79,7 +79,17 @@ struct SCtrlInitPos
 	HWND				m_hWnd;
 	RECT				m_Rect;
 	const SCtrlLayout *	m_pLayout;
+	int					m_nPresMode;			// PRES_xxx: what happens to the control in presentation layout
+	BOOL				m_bVisibleBeforePres;	// visibility saved when entering presentation layout
 };
+
+#define		PRES_NONE			0
+#define		PRES_HIDE			1
+#define		PRES_EXTEND_RIGHT	2
+#define		PRES_SHIFT_LEFT		3
+
+BOOL CMainView::s_bPresentation = FALSE;
+static BOOL s_bPresentationLoaded = FALSE;
 
 static const SCtrlLayout g_CtrlLayout [] = {
 
@@ -387,6 +397,8 @@ BEGIN_MESSAGE_MAP(CMainView, CFormView)
 	ON_COMMAND(ID_FILE_PRINT, CFormView::OnFilePrint)
 	ON_COMMAND(ID_FILE_PRINT_DIRECT, CFormView::OnFilePrint)
 	ON_COMMAND(ID_FILE_PRINT_PREVIEW, CFormView::OnFilePrintPreview)
+	ON_COMMAND(IDM_TOGGLE_PRESENTATION, OnTogglePresentation)
+	ON_UPDATE_COMMAND_UI(IDM_TOGGLE_PRESENTATION, OnUpdateTogglePresentation)
 
 
 	ON_NOTIFY(GVN_BEGINLABELEDIT, IDC_GRAYSCALE_GRID, OnGrayScaleGridBeginEdit)
@@ -417,6 +429,9 @@ CMainView::CMainView()
 	m_displayMode = 0;
 	m_infoDisplay = 5;
 	m_nSizeOffset = 0;
+	m_bPresApplied = FALSE;
+	m_nPresTopExtend = 0;
+	m_nPresBottomShift = 0;
 	m_bPositionsInit = FALSE;
 	m_dwInitialUserInfo = 0;
 	last_minCol = 4;
@@ -656,6 +671,8 @@ void CMainView::OnInitialUpdate()
 			pCtrlPos = new SCtrlInitPos;
 			pCtrlPos -> m_hWnd = hWnd;
 			pCtrlPos -> m_pLayout = & g_CtrlLayout [ i ];
+			pCtrlPos -> m_nPresMode = PRES_NONE;
+			pCtrlPos -> m_bVisibleBeforePres = TRUE;
 			::GetWindowRect ( hWnd, & pCtrlPos -> m_Rect );
 			::ScreenToClient ( m_hWnd, (LPPOINT) & pCtrlPos -> m_Rect.left );
 			::ScreenToClient ( m_hWnd, (LPPOINT) & pCtrlPos -> m_Rect.right );
@@ -674,6 +691,14 @@ void CMainView::OnInitialUpdate()
 	m_OriginalRect.right = m_InitialWindowSize.x;
 	m_OriginalRect.bottom = m_InitialWindowSize.y;
 	m_bPositionsInit = TRUE;
+
+	ClassifyPresentationControls ();
+	if ( ! s_bPresentationLoaded )
+	{
+		s_bPresentation = GetConfig () -> GetProfileInt ( "MainView", "Presentation", 0 ) != 0;
+		s_bPresentationLoaded = TRUE;
+	}
+	ApplyPresentationVisibility ();
 	
 	( (CMultiFrame *) GetParentFrame () ) -> m_MinSize2.x = m_InitialWindowSize.x + ( GetSystemMetrics ( SM_CXSIZEFRAME ) * 2 ) - 150;
 	( (CMultiFrame *) GetParentFrame () ) -> m_MinSize2.y = m_InitialWindowSize.y + GetSystemMetrics ( SM_CYCAPTION ) + GetSystemMetrics ( SM_CYSIZEFRAME ) + 6 - 400;
@@ -4991,6 +5016,8 @@ void CMainView::OnSelchangeComboMode()
 		m_testAnsiPatternButton.ShowWindow ( SW_HIDE );
 		m_refs.ShowWindow ( SW_SHOW );
 	}
+	if ( s_bPresentation )
+		ApplyPresentationVisibility ();
 
 	MsgAdd.LoadString ( IDS_CTRLCLICK_SIM );
 
@@ -5814,6 +5841,8 @@ void CMainView::InitButtons()
 		m_testAnsiPatternButton.ShowWindow ( SW_HIDE );
 		m_refs.ShowWindow ( SW_SHOW );
 	}
+	if ( s_bPresentation )
+		ApplyPresentationVisibility ();
 	m_Font.DeleteObject();
 
 	line_Font.CreateFontA(17,0,0,0,FW_SEMIBOLD,0,0,0,0,0,0,PROOF_QUALITY,VARIABLE_PITCH,_T("ARIAL"));
@@ -6093,6 +6122,18 @@ void CMainView::OnSize(UINT nType, int cx, int cy)
 					 break;
 			}
 			
+			if ( s_bPresentation )
+			{
+				if ( pCtrlPos -> m_nPresMode == PRES_EXTEND_RIGHT )
+					Rect.right += m_nPresTopExtend;
+				else if ( pCtrlPos -> m_nPresMode == PRES_SHIFT_LEFT )
+				{
+					Rect.left -= m_nPresBottomShift;
+					if ( pCtrlPos -> m_pLayout -> m_RightMode == LAYOUT_LEFT )
+						Rect.right -= m_nPresBottomShift;
+				}
+			}
+
 			hwdp = DeferWindowPos ( hwdp, pCtrlPos -> m_hWnd, NULL, Rect.left, Rect.top, Rect.right - Rect.left, Rect.bottom - Rect.top, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOREDRAW );
 		}
 
@@ -6105,76 +6146,9 @@ void CMainView::OnSize(UINT nType, int cx, int cy)
 			::InvalidateRect ( pCtrlPos -> m_hWnd, NULL, FALSE );
 		}
 
-		if ( m_pInfoWnd )
-		{
-			CWnd *	pWnd;
+		LayoutInfoPanes ();
 
-			pWnd = GetDlgItem ( IDC_STATIC_VIEW );
-			pWnd -> GetWindowRect ( & Rect );
-			ScreenToClient ( & Rect );
-			if (m_infoDisplay >= 1)
-			{
-				if (m_infoDisplay == 9)
-				{
-					m_pInfoWnd -> SetWindowPos ( pWnd, Rect.left, Rect.top, (Rect.right - Rect.left) / 2, Rect.bottom - Rect.top , SWP_NOACTIVATE );
-					m_pInfoWnd5 -> SetWindowPos ( pWnd, Rect.left + (Rect.right - Rect.left) / 2, Rect.top, (Rect.right - Rect.left) / 2, Rect.bottom - Rect.top, SWP_NOACTIVATE );
-				}
-				else if (m_infoDisplay == 10)
-				{
-					m_pInfoWnd -> SetWindowPos ( pWnd, Rect.left, Rect.top, (Rect.right - Rect.left) / 2, Rect.bottom - Rect.top , SWP_NOACTIVATE );
-					m_pInfoWnd6 -> SetWindowPos ( pWnd, Rect.left + (Rect.right - Rect.left) / 2, Rect.top, (Rect.right - Rect.left) / 2, (Rect.bottom - Rect.top) , SWP_NOACTIVATE );
-				}
-				else if (m_infoDisplay == 4)
-				{
-					m_pInfoWnd -> SetWindowPos ( pWnd, Rect.left, Rect.top, (Rect.right - Rect.left) / 2, Rect.bottom - Rect.top , SWP_NOACTIVATE );
-					m_pInfoWnd7 -> SetWindowPos ( pWnd, Rect.left + (Rect.right - Rect.left) / 2, Rect.top, (Rect.right - Rect.left) / 2, (Rect.bottom - Rect.top) , SWP_NOACTIVATE );
-				}
-				else if (m_infoDisplay == 1)
-				{
-					m_pInfoWnd -> SetWindowPos ( pWnd, Rect.left, Rect.top, (Rect.right - Rect.left) / 2, (Rect.bottom - Rect.top) , SWP_NOACTIVATE );
-					m_pInfoWnd8 -> SetWindowPos ( pWnd, Rect.left + (Rect.right - Rect.left) / 2, Rect.top, (Rect.right - Rect.left) / 2, (Rect.bottom - Rect.top) , SWP_NOACTIVATE );
-				}
-				else if (m_infoDisplay == 3)
-				{
-					m_pInfoWnd -> SetWindowPos ( pWnd, Rect.left, Rect.top, (Rect.right - Rect.left) / 2, (Rect.bottom - Rect.top) , SWP_NOACTIVATE );
-					m_pInfoWnd9 -> SetWindowPos ( pWnd, Rect.left + (Rect.right - Rect.left) / 2, Rect.top, (Rect.right - Rect.left) / 2, (Rect.bottom - Rect.top) , SWP_NOACTIVATE );
-				}
-				else if (m_infoDisplay == 11)
-				{
-					m_pInfoWnd -> SetWindowPos ( pWnd, Rect.left, Rect.top, (Rect.right - Rect.left) / 3, (Rect.bottom - Rect.top) , SWP_NOACTIVATE );
-					m_pInfoWnd10 -> SetWindowPos ( pWnd, Rect.left + (Rect.right - Rect.left) / 3, Rect.top, (Rect.right - Rect.left) / 3, (Rect.bottom - Rect.top) , SWP_NOACTIVATE );
-					m_pInfoWnd11 -> SetWindowPos ( pWnd, Rect.left + (Rect.right - Rect.left) / 3 * 2, Rect.top, (Rect.right - Rect.left) / 3, (Rect.bottom - Rect.top) , SWP_NOACTIVATE );
-				}
-				else if (m_infoDisplay == 12)
-				{
-					if (m_pInfoWnd13)
-					{
-						m_pInfoWnd -> SetWindowPos ( pWnd, Rect.left, Rect.top, (Rect.right - Rect.left) / 3., (Rect.bottom - Rect.top) , SWP_NOACTIVATE );
-						m_pInfoWnd12 -> SetWindowPos ( pWnd, Rect.left + (Rect.right - Rect.left) / 3., Rect.top, (Rect.right - Rect.left) / 3., (Rect.bottom - Rect.top) , SWP_NOACTIVATE );
-						m_pInfoWnd13 -> SetWindowPos ( pWnd, Rect.left + (Rect.right - Rect.left) / 3. * 2., Rect.top, (Rect.right - Rect.left) / 3., (Rect.bottom - Rect.top) , SWP_NOACTIVATE );
-					}
-					else if (m_pInfoWnd12)
-					{
-						m_pInfoWnd -> SetWindowPos ( pWnd, Rect.left, Rect.top, (Rect.right - Rect.left) / 2, (Rect.bottom - Rect.top) , SWP_NOACTIVATE );
-						m_pInfoWnd12 -> SetWindowPos ( pWnd, Rect.left + (Rect.right - Rect.left) / 2, Rect.top, (Rect.right - Rect.left) / 2, (Rect.bottom - Rect.top) , SWP_NOACTIVATE );
-					}
-					else if (m_pInfoWnd)
-						m_pInfoWnd -> SetWindowPos ( pWnd, Rect.left, Rect.top, (Rect.right - Rect.left), (Rect.bottom - Rect.top) , SWP_NOACTIVATE );
-				}
-				else
-					m_pInfoWnd -> SetWindowPos ( pWnd, Rect.left, Rect.top, Rect.right - Rect.left, (Rect.bottom - Rect.top), SWP_NOACTIVATE );
-			}
-			else
-			{
-				m_pInfoWnd -> SetWindowPos ( pWnd, Rect.left, Rect.top, (Rect.right - Rect.left), (Rect.bottom - Rect.top), SWP_NOACTIVATE );
-//				m_pInfoWnd2 -> SetWindowPos ( pWnd, Rect.left + (Rect.right - Rect.left) / 2, Rect.top, (Rect.right - Rect.left) / 2, (Rect.bottom - Rect.top) / 2, SWP_NOACTIVATE );
-//				m_pInfoWnd3 -> SetWindowPos ( pWnd, Rect.left, Rect.top + (Rect.bottom - Rect.top) / 2, (Rect.right - Rect.left) / 2, (Rect.bottom - Rect.top) / 2, SWP_NOACTIVATE );
-//				m_pInfoWnd4 -> SetWindowPos ( pWnd, Rect.left + (Rect.right - Rect.left) / 2, Rect.top + (Rect.bottom - Rect.top) / 2, (Rect.right - Rect.left) / 2, (Rect.bottom - Rect.top) / 2, SWP_NOACTIVATE );
-			}
-
-		}
-
-		if ( ClientRect.bottom - ClientRect.top < m_InitialWindowSize.y + m_nSizeOffset )
+		if ( s_bPresentation || ClientRect.bottom - ClientRect.top < m_InitialWindowSize.y + m_nSizeOffset )
 		{
 			m_Target.ShowWindow ( SW_HIDE );
 		}
@@ -6189,7 +6163,210 @@ void CMainView::OnSize(UINT nType, int cx, int cy)
 	}
 }
 
-void CMainView::OnSelchangeInfoDisplay() 
+/////////////////////////////////////////////////////////////////////////////
+// Presentation layout
+//
+// Hides the "Selected color" column (bottom left) and the right-hand column
+// (Display box and measure buttons) so the measures grid and the information
+// graphs use the whole window, and keeps the graph panes square.
+
+// Decide, from the initial control positions, what each control does in presentation layout
+void CMainView::ClassifyPresentationControls()
+{
+	RECT	rDisplay, rSelection, rView, rGrayGroup;
+	CWnd *	pWnd;
+
+	m_nPresTopExtend = 0;
+	m_nPresBottomShift = 0;
+
+	if ( ( pWnd = GetDlgItem ( IDC_DISPLAY_GROUP ) ) == NULL ) return;
+	pWnd -> GetWindowRect ( & rDisplay );
+	ScreenToClient ( & rDisplay );
+	if ( ( pWnd = GetDlgItem ( IDC_SELECTION_GROUP ) ) == NULL ) return;
+	pWnd -> GetWindowRect ( & rSelection );
+	ScreenToClient ( & rSelection );
+	if ( ( pWnd = GetDlgItem ( IDC_VIEW_GROUP ) ) == NULL ) return;
+	pWnd -> GetWindowRect ( & rView );
+	ScreenToClient ( & rView );
+	if ( ( pWnd = GetDlgItem ( IDC_GRAYSCALE_GROUP ) ) == NULL ) return;
+	pWnd -> GetWindowRect ( & rGrayGroup );
+	ScreenToClient ( & rGrayGroup );
+
+	m_nPresTopExtend = rDisplay.right - rGrayGroup.right;
+	m_nPresBottomShift = rView.left - rSelection.left;
+
+	POSITION pos = m_CtrlInitPos.GetHeadPosition ();
+	while ( pos )
+	{
+		SCtrlInitPos *	pCtrlPos = (SCtrlInitPos *) m_CtrlInitPos.GetNext ( pos );
+		const RECT &	r = pCtrlPos -> m_Rect;
+		int				cx = ( r.left + r.right ) / 2;
+		int				cy = ( r.top + r.bottom ) / 2;
+
+		if ( cy < rView.top )
+		{
+			// Top bar (view combo, sensor, generator) above the measures grid is left untouched
+			if ( cy < rGrayGroup.top )
+				continue;
+
+			// Grid row: right column is hidden, the grid takes its width
+			if ( cx >= rDisplay.left )
+				pCtrlPos -> m_nPresMode = PRES_HIDE;
+			else if ( pCtrlPos -> m_pLayout -> m_LeftMode == LAYOUT_LEFT && pCtrlPos -> m_pLayout -> m_RightMode == LAYOUT_RIGHT )
+				pCtrlPos -> m_nPresMode = PRES_EXTEND_RIGHT;
+		}
+		else
+		{
+			// Bottom area: "Selected color" column is hidden, the information view moves left
+			if ( cx < rView.left )
+				pCtrlPos -> m_nPresMode = PRES_HIDE;
+			else if ( pCtrlPos -> m_pLayout -> m_LeftMode == LAYOUT_LEFT )
+				pCtrlPos -> m_nPresMode = PRES_SHIFT_LEFT;
+		}
+	}
+}
+
+// Hide (or restore) the controls marked PRES_HIDE according to s_bPresentation
+void CMainView::ApplyPresentationVisibility()
+{
+	if ( ! m_bPositionsInit )
+		return;
+
+	POSITION pos = m_CtrlInitPos.GetHeadPosition ();
+	while ( pos )
+	{
+		SCtrlInitPos * pCtrlPos = (SCtrlInitPos *) m_CtrlInitPos.GetNext ( pos );
+		if ( pCtrlPos -> m_nPresMode != PRES_HIDE )
+			continue;
+
+		if ( s_bPresentation )
+		{
+			if ( ! m_bPresApplied )
+				pCtrlPos -> m_bVisibleBeforePres = ( ::GetWindowLong ( pCtrlPos -> m_hWnd, GWL_STYLE ) & WS_VISIBLE ) != 0;
+			::ShowWindow ( pCtrlPos -> m_hWnd, SW_HIDE );
+		}
+		else if ( m_bPresApplied && pCtrlPos -> m_bVisibleBeforePres )
+			::ShowWindow ( pCtrlPos -> m_hWnd, SW_SHOW );
+	}
+
+	if ( ! s_bPresentation && m_bPresApplied )
+	{
+		// These two buttons depend on the display mode, which may have changed meanwhile
+		m_testAnsiPatternButton.ShowWindow ( m_displayMode == 12 ? SW_SHOW : SW_HIDE );
+		m_refs.ShowWindow ( m_displayMode == 12 ? SW_HIDE : SW_SHOW );
+	}
+
+	m_bPresApplied = s_bPresentation;
+}
+
+void CMainView::ApplyPresentationLayout()
+{
+	if ( ! m_bPositionsInit )
+		return;
+
+	ApplyPresentationVisibility ();
+	OnSize ( 0, 0, 0 );
+	InvalidateRect ( NULL );
+}
+
+// Place the information panes side by side in Rect; when bSquare, each pane is a square
+// (as large as fits) and the group is centered horizontally
+void CMainView::PlaceInfoPanes ( CWnd * pInsertAfter, const RECT & Rect, CWnd ** pPanes, int nPanes, BOOL bSquare )
+{
+	if ( nPanes < 1 )
+		return;
+
+	int	nWidth = Rect.right - Rect.left;
+	int	nHeight = Rect.bottom - Rect.top;
+	int	nPaneWidth = nWidth / nPanes;
+	int	nPaneHeight = nHeight;
+	int	x = Rect.left;
+
+	if ( bSquare )
+	{
+		int nSide = ( nPaneWidth < nHeight ) ? nPaneWidth : nHeight;
+		nPaneWidth = nSide;
+		nPaneHeight = nSide;
+		x += ( nWidth - nSide * nPanes ) / 2;
+	}
+
+	for ( int i = 0; i < nPanes; i ++ )
+	{
+		int	w = nPaneWidth;
+		if ( ! bSquare && i == nPanes - 1 )
+			w = Rect.right - x;		// last pane takes the rounding remainder
+		if ( pPanes [ i ] )
+			pPanes [ i ] -> SetWindowPos ( pInsertAfter, x, Rect.top, w, nPaneHeight, SWP_NOACTIVATE );
+		x += nPaneWidth;
+	}
+}
+
+// Position the information panes inside the IDC_STATIC_VIEW placeholder
+void CMainView::LayoutInfoPanes()
+{
+	if ( ! m_pInfoWnd )
+		return;
+
+	RECT	Rect;
+	CWnd *	pWnd = GetDlgItem ( IDC_STATIC_VIEW );
+	CWnd *	pPanes [ 3 ];
+	int		nPanes = 0;
+
+	pWnd -> GetWindowRect ( & Rect );
+	ScreenToClient ( & Rect );
+
+	// Collect the panes shown side by side for the current information display
+	pPanes [ nPanes ++ ] = m_pInfoWnd;
+	switch ( m_infoDisplay )
+	{
+		case 9:		pPanes [ nPanes ++ ] = m_pInfoWnd5; break;
+		case 10:	pPanes [ nPanes ++ ] = m_pInfoWnd6; break;
+		case 4:		pPanes [ nPanes ++ ] = m_pInfoWnd7; break;
+		case 1:		pPanes [ nPanes ++ ] = m_pInfoWnd8; break;
+		case 3:		pPanes [ nPanes ++ ] = m_pInfoWnd9; break;
+		case 11:	pPanes [ nPanes ++ ] = m_pInfoWnd10; pPanes [ nPanes ++ ] = m_pInfoWnd11; break;
+		case 12:
+			if ( m_pInfoWnd12 ) pPanes [ nPanes ++ ] = m_pInfoWnd12;
+			if ( m_pInfoWnd13 ) pPanes [ nPanes ++ ] = m_pInfoWnd13;
+			break;
+	}
+
+	// In presentation layout the graph panes are kept square so the CIE diagram is not stretched
+	PlaceInfoPanes ( pWnd, Rect, pPanes, nPanes, s_bPresentation && m_infoDisplay != 0 );
+}
+
+void CMainView::OnTogglePresentation()
+{
+	s_bPresentation = ! s_bPresentation;
+	GetConfig () -> WriteProfileInt ( "MainView", "Presentation", s_bPresentation );
+
+	// Apply to every open measure document, not only the active one
+	CWinApp *	pApp = AfxGetApp ();
+	POSITION	posTempl = pApp -> GetFirstDocTemplatePosition ();
+	while ( posTempl )
+	{
+		CDocTemplate *	pTempl = pApp -> GetNextDocTemplate ( posTempl );
+		POSITION		posDoc = pTempl -> GetFirstDocPosition ();
+		while ( posDoc )
+		{
+			CDocument *	pDoc = pTempl -> GetNextDoc ( posDoc );
+			POSITION	posView = pDoc -> GetFirstViewPosition ();
+			while ( posView )
+			{
+				CView * pView = pDoc -> GetNextView ( posView );
+				if ( pView -> IsKindOf ( RUNTIME_CLASS ( CMainView ) ) )
+					( (CMainView *) pView ) -> ApplyPresentationLayout ();
+			}
+		}
+	}
+}
+
+void CMainView::OnUpdateTogglePresentation(CCmdUI* pCmdUI)
+{
+	pCmdUI -> SetCheck ( s_bPresentation ? 1 : 0 );
+}
+
+void CMainView::OnSelchangeInfoDisplay()
 {
 	CWnd *					pWnd;
 	CRect					Rect;
@@ -7365,7 +7542,11 @@ void CMainView::OnSelchangeInfoDisplay()
 	}
 
 	
-	if ( m_pInfoWnd ) 
+	// Panes were (re)created above with the default split; re-place them square
+	if ( s_bPresentation && m_bPositionsInit )
+		LayoutInfoPanes ();
+
+	if ( m_pInfoWnd )
 		m_pInfoWnd -> Invalidate ();
 }
 

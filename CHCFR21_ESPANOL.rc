@@ -1981,6 +1981,7 @@ BEGIN
     VK_LEFT,        IDM_PREV_TAB,           VIRTKEY, ALT, NOINVERT
     VK_F9,          IDM_SIM_SINGLEMEASURE,  VIRTKEY, NOINVERT
     VK_F7,          IDM_SINGLE_MEASUREMENT, VIRTKEY, NOINVERT
+    VK_F11,         IDM_TOGGLE_PRESENTATION, VIRTKEY, NOINVERT
 END
 
 
@@ -2280,6 +2281,7 @@ BEGIN
         MENUITEM "&Status bar",                 ID_VIEW_STATUS_BAR
         MENUITEM SEPARATOR
         MENUITEM "Ta&b control on top",         IDM_TOGGLE_TAB
+        MENUITEM "&Presentation layout\tF11",     IDM_TOGGLE_PRESENTATION
     END
     POPUP "&Measures"
     BEGIN
@@ -3776,6 +3778,7 @@ BEGIN
     IDM_PATTERN_DISPLAY     "Display various patterns..."
     IDM_PATTERN_DISP_ROOT   "Display various patterns..."
     IDM_TOGGLE_TAB          "Display tab control on top of window\nTab control on top"
+    IDM_TOGGLE_PRESENTATION "Hide side panels and keep graphs square, for screenshots\nPresentation layout"
     IDM_VIEW_DATASET        "Display measures\nMeasures"
 END
 

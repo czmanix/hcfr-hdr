@@ -2174,6 +2174,7 @@ BEGIN
     VK_F6,          ID_NEXT_PANE,           VIRTKEY, NOINVERT
     VK_F6,          ID_PREV_PANE,           VIRTKEY, SHIFT, NOINVERT
     VK_F7,          IDM_SINGLE_MEASUREMENT, VIRTKEY, NOINVERT
+    VK_F11,         IDM_TOGGLE_PRESENTATION, VIRTKEY, NOINVERT
     VK_F8,          IDM_CONTINUOUS_MEASUREMENT, VIRTKEY, NOINVERT
     VK_F9,          IDM_SIM_SINGLEMEASURE,  VIRTKEY, NOINVERT
     VK_INSERT,      ID_EDIT_COPY,           VIRTKEY, CONTROL, NOINVERT
@@ -2486,6 +2487,7 @@ BEGIN
         MENUITEM "Barre d'é&tat",               ID_VIEW_STATUS_BAR
         MENUITEM SEPARATOR
         MENUITEM "&Onglets en haut",            IDM_TOGGLE_TAB
+        MENUITEM "Mise en page de &présentation\tF11", IDM_TOGGLE_PRESENTATION
     END
     POPUP "&Mesures"
     BEGIN
@@ -3869,6 +3871,7 @@ BEGIN
                             "Lance ou arrête les mesures en continu\nLance ou arrête les mesures en continu"
     IDM_PATTERN_DISP_ROOT   "Permet d'afficher des mires..."
     IDM_TOGGLE_TAB          "Affiche les onglets en haut\nOnglets en haut"
+    IDM_TOGGLE_PRESENTATION "Masque les panneaux latéraux, graphiques carrés (captures d'écran)\nMise en page de présentation"
     IDM_VIEW_DATASET        "Affiche les mesures\nMesures"
 END
 

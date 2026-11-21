@@ -93,6 +93,20 @@ private:
 	CFont		line_Font;
 	DWORD		m_dwInitialUserInfo;
 
+	// Presentation layout: hides the "Selected color" and "Display" panels and keeps
+	// the information graphs square (for screenshots in articles)
+	BOOL		m_bPresApplied;
+	int			m_nPresTopExtend;
+	int			m_nPresBottomShift;
+	void		ClassifyPresentationControls();
+	void		ApplyPresentationVisibility();
+	void		LayoutInfoPanes();
+	void		PlaceInfoPanes(CWnd * pInsertAfter, const RECT & Rect, CWnd ** pPanes, int nPanes, BOOL bSquare);
+public:
+	static BOOL	s_bPresentation;
+	void		ApplyPresentationLayout();
+private:
+
 	// Information windows
 	CWnd *		m_pInfoWnd;
 	CWnd *		m_pInfoWnd2;
@@ -262,6 +276,8 @@ protected:
 	afx_msg void OnAnsiContrastPatternTestButton();
 	afx_msg void OnRefs();
 	//}}AFX_MSG
+	afx_msg void OnTogglePresentation();
+	afx_msg void OnUpdateTogglePresentation(CCmdUI* pCmdUI);
 	afx_msg LRESULT OnSetUserInfoPostInitialUpdate(WPARAM wParam, LPARAM lParam);
  public:
 	DECLARE_MESSAGE_MAP()

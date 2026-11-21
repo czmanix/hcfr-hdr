@@ -1999,6 +1999,7 @@ BEGIN
     VK_LEFT,        IDM_PREV_TAB,           VIRTKEY, ALT, NOINVERT
     VK_F9,          IDM_SIM_SINGLEMEASURE,  VIRTKEY, NOINVERT
     VK_F7,          IDM_SINGLE_MEASUREMENT, VIRTKEY, NOINVERT
+    VK_F11,         IDM_TOGGLE_PRESENTATION, VIRTKEY, NOINVERT
 END
 
 
@@ -2298,6 +2299,7 @@ BEGIN
         MENUITEM "&Barra di stato",             ID_VIEW_STATUS_BAR
         MENUITEM SEPARATOR
         MENUITEM "Co&trollo scheda in alto",    IDM_TOGGLE_TAB
+        MENUITEM "Layout di &presentazione\tF11", IDM_TOGGLE_PRESENTATION
     END
     POPUP "&Misurazioni"
     BEGIN
@@ -3854,6 +3856,7 @@ BEGIN
     IDM_PATTERN_DISPLAY     "Visualizza vari pattern..."
     IDM_PATTERN_DISP_ROOT   "Visualizza vari pattern..."
     IDM_TOGGLE_TAB          "Visualizzare il controllo delle schede nella parte superiore della finestra\nTab control in alto"
+    IDM_TOGGLE_PRESENTATION "Nasconde i pannelli laterali, grafici quadrati (per screenshot)\nLayout di presentazione"
     IDM_VIEW_DATASET        "Visualizza le misure\nMisura"
 END
 

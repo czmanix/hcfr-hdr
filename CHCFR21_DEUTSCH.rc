@@ -1784,6 +1784,7 @@ BEGIN
     VK_F6,          ID_NEXT_PANE,           VIRTKEY, NOINVERT
     VK_F6,          ID_PREV_PANE,           VIRTKEY, SHIFT, NOINVERT
     VK_F7,          IDM_SINGLE_MEASUREMENT, VIRTKEY, NOINVERT
+    VK_F11,         IDM_TOGGLE_PRESENTATION, VIRTKEY, NOINVERT
     VK_F8,          IDM_CONTINUOUS_MEASUREMENT, VIRTKEY, NOINVERT
     VK_F9,          IDM_SIM_SINGLEMEASURE,  VIRTKEY, NOINVERT
     VK_INSERT,      ID_EDIT_COPY,           VIRTKEY, CONTROL, NOINVERT
@@ -2098,6 +2099,7 @@ BEGIN
         MENUITEM "S&tatuszeile",                ID_VIEW_STATUS_BAR
         MENUITEM SEPARATOR
         MENUITEM "&Reiter oben",                IDM_TOGGLE_TAB
+        MENUITEM "&Präsentationslayout\tF11",     IDM_TOGGLE_PRESENTATION
     END
     POPUP "&Messung"
     BEGIN
@@ -3627,6 +3629,7 @@ BEGIN
     IDM_PATTERN_DISPLAY     "Verschiedene Testbilder anzeigen..."
     IDM_PATTERN_DISP_ROOT   "Verschiedene Testbilder anzeigen..."
     IDM_TOGGLE_TAB          "Reiter oben am Fenster anzeigen\nReiter oben"
+    IDM_TOGGLE_PRESENTATION "Seitenbereiche ausblenden, Diagramme quadratisch (für Screenshots)\nPräsentationslayout"
     IDM_VIEW_DATASET        "Messungen anzeigen\nMessungen"
 END
 

@@ -1019,6 +1019,7 @@
 #define IDM_PATTERN_DISPLAY             32971
 #define IDM_PATTERN_DISP_ROOT           32972
 #define IDM_TOGGLE_TAB                  32973
+#define IDM_TOGGLE_PRESENTATION         33108
 #define IDM_VIEW_DATASET                32974
 #define IDM_TAB_CLOSE                   32976
 #define IDM_TAB_NEWFRAME                32977
@@ -1695,7 +1696,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        385
-#define _APS_NEXT_COMMAND_VALUE         33108
+#define _APS_NEXT_COMMAND_VALUE         33109
 #define _APS_NEXT_CONTROL_VALUE         1292
 #define _APS_NEXT_SYMED_VALUE           143
 #endif
