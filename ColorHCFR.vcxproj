@@ -1135,6 +1135,7 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="Generators\D3D11HdrOutput.cpp" />
     <ClCompile Include="Generators\FullScreenWindow.cpp">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1539,6 +1540,7 @@
     <ClInclude Include="Controls\SpectrumDlg.h" />
     <ClInclude Include="Controls\TargetWnd.h" />
     <ClInclude Include="Controls\testcolorwnd.h" />
+    <ClInclude Include="Generators\D3D11HdrOutput.h" />
     <ClInclude Include="Generators\FullScreenWindow.h" />
     <ClInclude Include="Generators\GDIGenePropPage.h" />
     <ClInclude Include="Generators\GDIGenerator.h" />

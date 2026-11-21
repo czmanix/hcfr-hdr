@@ -464,8 +464,40 @@ BOOL CGDIGenerator::Init(UINT nbMeasure, bool isSpecial)
 	m_displayWindow.SetRGBScale(m_b16_235);
 	m_displayWindow.MoveToMonitor(m_hMonitor[m_activeMonitorNum]);
 
-	if (m_nDisplayMode == DISPLAY_GDI || m_nDisplayMode == DISPLAY_OVERLAY || m_nDisplayMode == DISPLAY_GDI_nBG ||
-		m_nDisplayMode == DISPLAY_GDI_Hide || m_nDisplayMode == DISPLAY_VMR9 || isSpecial)
+	// HDR10 in the GDI display modes: the pattern window draws through Direct3D 11 itself
+	// (10-bit BT.2020/PQ swap chain, Windows HDR must be on). libHDR is not used then.
+	BOOL bD3DHdr10 = m_bHdr10 && (m_nDisplayMode == DISPLAY_GDI || m_nDisplayMode == DISPLAY_GDI_nBG);
+	m_displayWindow.m_bHdr10 = bD3DHdr10;
+	m_displayWindow.ResetHdrOutput();
+	if (bD3DHdr10)
+	{
+		// libHDR's D3D12 swap chain on the same window would block the Direct3D 11 one
+		if (m_HdrInterface)
+		{
+			delete m_HdrInterface;
+			m_HdrInterface = NULL;
+		}
+
+		// HDR10 static metadata from the preferences (mastering display, MaxCLL, MaxFALL)
+		HdrOutputMetadata md = { 0 };
+		md.RedPrimary[0] = UINT16(GetConfig()->m_manualRedx * 50000.0);
+		md.RedPrimary[1] = UINT16(GetConfig()->m_manualRedy * 50000.0);
+		md.GreenPrimary[0] = UINT16(GetConfig()->m_manualGreenx * 50000.0);
+		md.GreenPrimary[1] = UINT16(GetConfig()->m_manualGreeny * 50000.0);
+		md.BluePrimary[0] = UINT16(GetConfig()->m_manualBluex * 50000.0);
+		md.BluePrimary[1] = UINT16(GetConfig()->m_manualBluey * 50000.0);
+		md.WhitePoint[0] = UINT16(GetConfig()->m_manualWhitex * 50000.0);
+		md.WhitePoint[1] = UINT16(GetConfig()->m_manualWhitey * 50000.0);
+		md.MaxMasteringLuminance = UINT(GetConfig()->m_MasterMaxL * 10000.0);
+		md.MinMasteringLuminance = UINT(GetConfig()->m_MasterMinL * 10000.0);
+		md.MaxContentLightLevel = USHORT(GetConfig()->m_ContentMaxL);
+		md.MaxFrameAverageLightLevel = USHORT(GetConfig()->m_FrameAvgMaxL);
+		BOOL bMetadata = GetConfig()->m_MasterMaxL > 0 || GetConfig()->m_ContentMaxL > 0;
+		m_displayWindow.SetHdrMetadata(bMetadata ? &md : NULL);
+	}
+
+	if (!bD3DHdr10 && (m_nDisplayMode == DISPLAY_GDI || m_nDisplayMode == DISPLAY_OVERLAY || m_nDisplayMode == DISPLAY_GDI_nBG ||
+		m_nDisplayMode == DISPLAY_GDI_Hide || m_nDisplayMode == DISPLAY_VMR9 || isSpecial))
 	{
 		if (!m_HdrInterface)
 		{

@@ -32,6 +32,18 @@ msbuild ColorHCFR.sln /t:ColorHCFR /p:Configuration=Release /p:Platform=x64
 
 Both builds read and write the same `.chc` file format.
 
+### HDR10 measurements
+
+With **HDR10** enabled in the GDI generator settings, the pattern window draws the measurement
+patterns through Direct3D 11: a 10-bit swap chain in BT.2020/PQ (`DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020`),
+so pattern levels go to the display as exact PQ code values. This works with any GPU vendor, but
+**Windows HDR must be on** for the display showing the patterns (Win+Alt+B). If it is off, HCFR
+says so once and draws the patterns in SDR. HDR10 static metadata (mastering display, MaxCLL,
+MaxFALL) is taken from the preferences. Special test images, grids and animations stay in SDR.
+
+Typical settings: colour space *UHDTV Rec2020* (or *P3 in Rec2020*), EOTF *ST 2084*, and an Argyll
+meter with Reading Type *Display*.
+
 ### Limitations of the 64-bit build
 
 - The legacy native drivers for **Spyder II, Eye-One, Mazet MTCS-C2 and Spyder 3**

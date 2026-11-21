@@ -30,6 +30,7 @@
 #include "../libccast/ccwin.h"
 #include "../libccast/ccast.h"
 #include "../Tools/GoogleCastWrapper/GoogleCastWrapper.h"
+#include "D3D11HdrOutput.h"
 
 // Display modes
 #define DISPLAY_GDI		0
@@ -100,8 +101,17 @@ public:
 	BOOL					m_bResizePict;
 	HWND					hWnd;
 
+	// HDR10 output through Direct3D 11 (10-bit BT.2020/PQ), used by the GDI display modes when HDR10 is enabled
+	void SetHdrMetadata(const HdrOutputMetadata* pMetadata);
+	void ResetHdrOutput();		// detach from the window and retry on next paint (after a settings change)
+
 protected:
-	void DisplayRGBColorInternal(COLORREF clr, BOOL bDisableWaiting);
+	void DisplayRGBColorInternal(COLORREF clr, BOOL bDisableWaiting, const double* pExactColor = NULL);
+	BOOL PaintHdr10(const CRect& rect, BOOL isSpecial, double bgstim);
+
+	CD3D11HdrOutput *		m_pHdrOutput;
+	BOOL					m_bHdrOutputFailed;
+	double					m_dColor[3];	// pattern colour 0..1 at full precision (PQ code values in HDR10)
 	BOOL					m_bAnimated;
 	BOOL					m_bWhite;
 	UINT					m_IdTimer;

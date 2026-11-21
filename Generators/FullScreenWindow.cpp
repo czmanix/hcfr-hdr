@@ -70,6 +70,11 @@ CFullScreenWindow::CFullScreenWindow(BOOL bTestOverlay)
 	m_bdispTrip = GetConfig()->GetProfileInt("GDIGenerator","DISPLAYTRIPLETS",1);
 	m_bVideoScale = FALSE;
 
+	// HDR10 Direct3D output (created on first HDR10 paint)
+	m_pHdrOutput = NULL;
+	m_bHdrOutputFailed = FALSE;
+	m_dColor[0] = m_dColor[1] = m_dColor[2] = 0.;
+
 	// Overlay data
 	m_lpDD = NULL;
 	m_lpDDPrimarySurface = NULL;    
@@ -276,6 +281,10 @@ CFullScreenWindow::~CFullScreenWindow()
 	Hide ();
 	SetDisplayMode (GetConfig()->GetProfileInt("GDIGenerator","DisplayMode",DISPLAY_DEFAULT_MODE));
 
+	// the swap chain must go before its window
+	delete m_pHdrOutput;
+	m_pHdrOutput = NULL;
+
 	DestroyWindow ();
 
 	ASSERT ( m_lpDD == NULL && m_lpDDPrimarySurface == NULL && m_lpDDOverlay == NULL );
@@ -337,13 +346,16 @@ void CFullScreenWindow::DisplayRGBColor(const ColorRGBDisplay& clr, BOOL bDisabl
 {
 	m_nDisplayMode = GetConfig()->GetProfileInt("GDIGenerator","DisplayMode",DISPLAY_DEFAULT_MODE);
 
+	// keep the exact value (percent -> 0..1) for the 10-bit HDR10 output
+	const double exact[3] = { clr[0] / 100., clr[1] / 100., clr[2] / 100. };
+
 	if ( m_nDisplayMode == DISPLAY_ccast )
-	    DisplayRGBColorInternal(clr.GetColorRef(m_b16_235), TRUE);
+	    DisplayRGBColorInternal(clr.GetColorRef(m_b16_235), TRUE, exact);
 	else
-	    DisplayRGBColorInternal(clr.GetColorRef(m_b16_235), bDisableWaiting);
+	    DisplayRGBColorInternal(clr.GetColorRef(m_b16_235), bDisableWaiting, exact);
 }
 
-void CFullScreenWindow::DisplayRGBColorInternal(COLORREF clr, BOOL bDisableWaiting)
+void CFullScreenWindow::DisplayRGBColorInternal(COLORREF clr, BOOL bDisableWaiting, const double* pExactColor)
 {
 	int				nColorFlag;
 	int				nPadWidth, nPadHeight;
@@ -359,10 +371,23 @@ void CFullScreenWindow::DisplayRGBColorInternal(COLORREF clr, BOOL bDisableWaiti
 	
 	m_Color = clr;
 
+	if ( pExactColor )
+	{
+		for ( int i = 0; i < 3; i ++ )
+			m_dColor [ i ] = pExactColor [ i ];
+	}
+	else if ( ( clr & 0xFE000000 ) != 0xFE000000 )
+	{
+		// Only an 8-bit colour is known
+		const int c [ 3 ] = { GetRValue ( clr ), GetGValue ( clr ), GetBValue ( clr ) };
+		for ( int i = 0; i < 3; i ++ )
+			m_dColor [ i ] = m_b16_235 ? ( c [ i ] - 16 ) / 219. : c [ i ] / 255.;
+	}
+
 	double m_rectAreaPercent;
 
 	m_rectAreaPercent = sqrt (m_rectSizePercent / 100.) * 100;
-	
+
 	if ( m_nDisplayMode == DISPLAY_OVERLAY )
 	{
 		// Set color directly in YUY2 format inside overlay surface
@@ -1225,6 +1250,10 @@ void video_scale (CxImage *inImage)
 	//make sure we are foreground
 	::SetForegroundWindow(this->hWnd);
 	this->SetFocus();
+
+	// HDR10: measurement patterns are drawn through Direct3D 11 (10-bit BT.2020/PQ)
+	if ( PaintHdr10 ( rect, isSpecial, bgstim ) )
+		return;
 	// Pattern Display Common Vars
 		CBrush		br0;
 		CRect		aRect;
@@ -2177,6 +2206,151 @@ void CFullScreenWindow::OnTimer(UINT_PTR nIDEvent)
 BOOL CFullScreenWindow::OnSetCursor( CWnd* pWnd, UINT nHitTest, UINT message )
 {
 	SetCursor ( NULL );
+	return TRUE;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// HDR10 output
+//
+// With HDR10 enabled the GDI display modes draw the measurement patterns into a
+// 10-bit Direct3D 11 swap chain in BT.2020/PQ (Windows HDR must be on). Pattern
+// values are PQ code values, sent to the display unchanged and at full precision.
+
+void CFullScreenWindow::SetHdrMetadata(const HdrOutputMetadata* pMetadata)
+{
+	if ( ! m_pHdrOutput )
+		m_pHdrOutput = new CD3D11HdrOutput ();
+	m_pHdrOutput -> SetMetadata ( pMetadata );
+}
+
+void CFullScreenWindow::ResetHdrOutput()
+{
+	if ( m_pHdrOutput )
+		m_pHdrOutput -> Release ();
+	m_bHdrOutputFailed = FALSE;
+}
+
+// Returns FALSE when the pattern has to be drawn by GDI instead
+BOOL CFullScreenWindow::PaintHdr10(const CRect& rect, BOOL isSpecial, double bgstim)
+{
+	// Test images, grids and animations are drawn by GDI (in SDR): the window is given back to GDI for them
+	if ( ! m_bHdr10 || m_bTestOverlay || isSpecial || ( m_nDisplayMode != DISPLAY_GDI && m_nDisplayMode != DISPLAY_GDI_nBG ) )
+	{
+		// give the window back to GDI
+		if ( m_pHdrOutput && m_pHdrOutput -> IsActive () )
+			m_pHdrOutput -> Release ();
+		return FALSE;
+	}
+	if ( m_bHdrOutputFailed )
+		return FALSE;
+
+	if ( ! m_pHdrOutput )
+		m_pHdrOutput = new CD3D11HdrOutput ();
+
+	std::string error;
+	if ( ! m_pHdrOutput -> Ensure ( m_hWnd, error ) )
+	{
+		// report once, then draw in SDR until the generator is initialized again
+		m_bHdrOutputFailed = TRUE;
+		CString msg = "HDR10 output is not available, patterns are drawn in SDR.\n\n";
+		msg += error.c_str ();
+		GetColorApp () -> InMeasureMessageBox ( msg, "HDR10", MB_OK | MB_ICONWARNING );
+		return FALSE;
+	}
+
+	CD3D11HdrOutput & out = * m_pHdrOutput;
+	CRect rcAll ( 0, 0, out.Width (), out.Height () );
+
+	
+
+	if ( ( m_Color & 0xFE000000 ) == 0xFE000000 )
+	{
+		// Ansi contrast pattern: white pads at full signal on black
+		// (same pad selection as the GDI drawing in OnPaint)
+		int nPadWidth = rcAll.Width () / ANSI_CONTRAST_BLOCKS;
+		int nPadHeight = rcAll.Height () / ANSI_CONTRAST_BLOCKS;
+		BOOL bDraw = ( m_Color == 0xFF000000 );
+
+		out.Clear ( 0, 0, 0 );
+		for ( int row = 0; row < ANSI_CONTRAST_BLOCKS ; row ++ )
+		{
+			bDraw = ! bDraw;
+			for ( int col = 0; col < ANSI_CONTRAST_BLOCKS ; col ++ )
+			{
+				bDraw = ! bDraw;
+				if ( ( row % 2 == 0 ) ? bDraw : ! bDraw )
+				{
+					CRect pad ( nPadWidth * col, nPadHeight * row, nPadWidth * ( col + 1 ), nPadHeight * ( row + 1 ) );
+					out.Fill ( pad, 1, 1, 1 );
+				}
+			}
+		}
+		out.Present ();
+		return TRUE;
+	}
+
+	// Same geometry as the GDI pattern
+	double areaPercent = sqrt ( m_rectSizePercent / 100. ) * 100;
+	int dWidth = (int) ( rcAll.Width () * ( 100 - areaPercent ) / 100.0 );
+	int dHeight = (int) ( rcAll.Height () * ( 100 - areaPercent ) / 100.0 );
+	double borderArea = ( dWidth + 40. ) * ( dHeight + 40. ) - dWidth * dHeight;
+	CRect patternRect = rcAll;
+	patternRect.DeflateRect ( dWidth / 2, dHeight / 2 );
+
+	// Background: keeps the average screen level at the requested stimulus (window and border excluded)
+	double bg [ 3 ] = { 0, 0, 0 };
+	BOOL bBackground = ( m_rectSizePercent < 100 && m_nDisplayMode != DISPLAY_GDI_nBG && ! m_busePic );
+	if ( bBackground )
+	{
+		double denom = 1 - m_rectSizePercent / 100. - borderArea / ( (double) rcAll.Width () * rcAll.Height () );
+		for ( int i = 0; i < 3; i ++ )
+		{
+			double v = denom > 0 ? max ( 0., bgstim - m_dColor [ i ] * m_rectSizePercent / 100. ) / denom : 0.;
+			bg [ i ] = min ( v, 1. );
+		}
+	}
+	CRect borderRect = rcAll;
+	borderRect.DeflateRect ( ( dWidth - 40 ) / 2, ( dHeight - 40 ) / 2 );
+
+	// flip-model buffers are undefined after Present: every frame is drawn completely
+	auto drawBackground = [&] ()
+	{
+		out.Clear ( bg [ 0 ], bg [ 1 ], bg [ 2 ] );
+		if ( bBackground )
+			out.Fill ( borderRect, 0, 0, 0 );
+	};
+
+	// static pattern detection avoidance
+	m_nPat++;
+	if ( ( m_nPat % GetConfig () -> m_ablFreq ) == 0 && GetConfig () -> m_bABL )
+	{
+		double lvl = GetConfig () -> m_ablLevel / 100.;
+		if ( m_nDisplayMode == DISPLAY_GDI_nBG )
+		{
+			out.Clear ( 0, 0, 0 );
+			out.Fill ( patternRect, lvl, lvl, lvl );
+		}
+		else
+			out.Clear ( lvl, lvl, lvl );
+		out.Present ();
+		Sleep ( GetConfig () -> m_ablDuration );
+	}
+
+	// Settling pattern
+	if ( GetConfig () -> m_isSettling && GetConfig () -> bDisplayRT )
+	{
+		for ( int j = 0; j < 255; j += 3 )
+		{
+			drawBackground ();
+			out.Fill ( patternRect, j / 255., j / 255., j / 255. );
+			out.Present ();
+			Sleep ( 55 );
+		}
+	}
+
+	drawBackground ();
+	out.Fill ( patternRect, m_dColor [ 0 ], m_dColor [ 1 ], m_dColor [ 2 ] );
+	out.Present ();
 	return TRUE;
 }
 
