@@ -181,8 +181,9 @@ ArgyllMeterWrapper::ArgyllMeterWrapper(_inst* meter) :
     m_meter(meter),
     m_nextCalibration(0),
     m_meterType(meter->get_itype(meter)),
-	m_Adapt(0)
-    
+	m_Adapt(0),
+    m_lastConfigError(0)
+
 {
 }
 
@@ -614,6 +615,7 @@ ArgyllMeterWrapper::eMeterState ArgyllMeterWrapper::takeReading(CString Spectral
 
     if(isInstCodeReason(instCode, inst_wrong_config))
     {
+        m_lastConfigError = instCode;
         return INCORRECT_POSITION;
     }
     if(instCode != inst_ok || !argyllReading.XYZ_v)
@@ -694,8 +696,9 @@ ArgyllMeterWrapper::eMeterState ArgyllMeterWrapper::calibrate()
             return NEEDS_MANUAL_CALIBRATION;
         }
     }
-    if(instCode == inst_wrong_config)
+    if(isInstCodeReason(instCode, inst_wrong_config))
     {
+        m_lastConfigError = instCode;
         return INCORRECT_POSITION;
     }
     if(instCode != inst_ok)
@@ -837,7 +840,20 @@ void ArgyllMeterWrapper::checkMeterIsInitialized()
 
 std::string ArgyllMeterWrapper::getIncorrectPositionInstructions()
 {
-    return "Meter is in incorrect position";
+    std::string text("Meter is in incorrect position");
+    // add the instrument's own reason, e.g. "Ambient filter should be removed"
+    if(m_meter && m_lastConfigError)
+    {
+        const char* reason = m_meter->inst_interp_error(m_meter, (inst_code)m_lastConfigError);
+        if(reason && *reason)
+        {
+            text += ":\n";
+            text += reason;
+        }
+    }
+    if(m_readingType == AMBIENT)
+        text += "\n\nThe sensor's Reading Type is set to Ambient (Argyll Meter properties).";
+    return text;
 }
 
 void ArgyllMeterWrapper::setHiResMode(bool enableHiRes)

@@ -158,8 +158,9 @@ private:
     CColor m_lastReading;
     int m_nextCalibration;
     BOOL dark_only;
-    char m_calibrationMessage[200];    
+    char m_calibrationMessage[200];
     bool m_Adapt;
+    int m_lastConfigError;     // inst_code of the last "wrong configuration" (position) error
     
     std::string m_SampleDescription;
 };
