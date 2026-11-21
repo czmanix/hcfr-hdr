@@ -139,6 +139,10 @@ public:
     // or delete the returned objects
     static ArgyllMeterWrappers getDetectedMeters(std::string& errorMessage);
 
+    // whether meter detection also scans Bluetooth serial (COM) ports; off by default
+    // because opening each paired Bluetooth port blocks for several seconds
+    static void setScanBluetoothPorts(bool scan);
+
     // is the meter a colorimeter rather than a spectrometer
     virtual bool isColorimeter();
 

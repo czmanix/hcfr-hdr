@@ -49,6 +49,9 @@
 
 namespace
 {
+    // scan Bluetooth serial ports when detecting meters (see setScanBluetoothPorts)
+    bool g_scanBluetoothPorts = false;
+
     void warning_imp(void *cntx, struct _a1log *p, char *fmt, va_list args) 
     {
         ArgyllLogMessage("Debug", fmt, args);
@@ -122,7 +125,10 @@ namespace
                     m_ComPaths->del(m_ComPaths);
                 }
 
-                m_ComPaths = new_icompaths(g_log);
+                icom_type portMask = icomt_portattr_all;
+                if (!g_scanBluetoothPorts)
+                    portMask = (icom_type)(portMask & ~icomt_btserial);
+                m_ComPaths = new_icompaths_sel(g_log, (icom_type)(icomt_instrument | portMask));
                 if (m_ComPaths == 0)
                 {
                     throw std::logic_error("Can't create new icompaths");
@@ -871,6 +877,11 @@ bool ArgyllMeterWrapper::isMeterStillValid() const
 ArgyllMeterWrapper::ArgyllMeterWrappers ArgyllMeterWrapper::getDetectedMeters(std::string& errorMessage)
 {
     return ArgyllMeters::getInstance().getDetectedMeters(errorMessage);
+}
+
+void ArgyllMeterWrapper::setScanBluetoothPorts(bool scan)
+{
+    g_scanBluetoothPorts = scan;
 }
 
 bool ArgyllMeterWrapper::isColorimeter()

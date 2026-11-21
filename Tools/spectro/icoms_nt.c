@@ -54,6 +54,7 @@ int serial_get_paths(icompaths *p, icom_type mask) {
 			char value[MXVSIZE];
 			DWORD vsize = MXVSIZE;
 			icom_type dctype = icomt_unknown;
+			int added = 0;		/* HCFR: port was added to the list (only those get probed) */
 
 			stat = RegEnumValue(
 				sch,		/* handle to key to enumerate */
@@ -116,14 +117,18 @@ int serial_get_paths(icompaths *p, icom_type mask) {
 				//    to that of device manager, i.e. "Prolific USB-to-SerialBridge (COM6)"
 				/* Add the port to the list */
 				p->add_serial(p, value, value, dctype);
+				added = 1;
 				a1logd(p->log, 8, "serial_get_paths: Added '%s' path '%s' dctype 0x%x\n",vp, value,dctype);
 			}
 #ifndef ENABLE_SERIAL
 			}
 #endif
 
-			/* If fast, try and identify it */
-			if (dctype & icomt_fastserial) {
+			/* If fast, try and identify it.
+			   HCFR: only probe a port we actually added. Previously a port excluded by the
+			   mask (e.g. Bluetooth) re-probed the last added path, or used a NULL path.
+			   Opening Bluetooth serial ports blocks for seconds each. */
+			if (added && (dctype & icomt_fastserial)) {
 				icompath *path;
 				icoms *icom;
 				if ((path = p->get_last_path(p)) != NULL

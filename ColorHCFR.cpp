@@ -42,6 +42,7 @@
 #include "DocEnumerator.h"	//Ki
 
 #include "EyeOneSensor.h"
+#include "ArgyllMeterWrapper.h"
 #include "SerialCom.h"
 #include "VersionInfoFromFile.h"
 #include "ximage.h"
@@ -283,6 +284,10 @@ BOOL CColorHCFRApp::InitInstance()
 	// Beginning of initializations
 	m_pColorReference = new CColorReference (SDTV,D65,2.2);
 	m_pConfig = new CColorHCFRConfig();
+
+	// Meter detection skips Bluetooth COM ports unless enabled: opening each paired
+	// Bluetooth port blocks for seconds, which made opening .chc files take ~20 s
+	ArgyllMeterWrapper::setScanBluetoothPorts ( m_pConfig -> GetProfileInt ( "Argyll", "ScanBluetoothPorts", 0 ) != 0 );
 
 	m_pReferenceData = NULL; //Ki
 //	SetRegistryKey(_T("ColorHCFR"));	// used for MRU
