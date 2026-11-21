@@ -497,12 +497,12 @@ void CSatLumShiftGrapher::GetSatShift ( double & satshift, double & deltaE, cons
 	int mode = GetConfig()->m_GammaOffsetType;
 	if (mode == 5)
 	{
-		aColor.SetX(aColor.GetX() / 105.95640);
-		aColor.SetY(aColor.GetY() / 105.95640);
-		aColor.SetZ(aColor.GetZ() / 105.95640);
-		aColore.SetX(aColore.GetX() / 105.95640);
-		aColore.SetY(aColore.GetY() / 105.95640);
-		aColore.SetZ(aColore.GetZ() / 105.95640);
+		aColor.SetX(aColor.GetX() / GetHDRRefLevel());
+		aColor.SetY(aColor.GetY() / GetHDRRefLevel());
+		aColor.SetZ(aColor.GetZ() / GetHDRRefLevel());
+		aColore.SetX(aColore.GetX() / GetHDRRefLevel());
+		aColore.SetY(aColore.GetY() / GetHDRRefLevel());
+		aColore.SetZ(aColore.GetZ() / GetHDRRefLevel());
 	}
 	
 	ColorRGB rgb,rgbe;
@@ -614,15 +614,15 @@ void CSatLumShiftGrapher::GetSatShift ( double & satshift, double & deltaE, cons
 
 	if (GetConfig()->m_GammaOffsetType == 5)
 	{
-		double tmWhite = getL_EOTF(0.5022283, White, Black, GetConfig()->m_GammaRel, GetConfig()->m_Split, 5, GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * 100.0;
-		aColor.SetX(aColor.GetX() * 105.95640);
-		aColor.SetY(aColor.GetY() * 105.95640);
-		aColor.SetZ(aColor.GetZ() * 105.95640);
-		aColore.SetX(aColore.GetX() * 105.95640);
-		aColore.SetY(aColore.GetY() * 105.95640);
-		aColore.SetZ(aColore.GetZ() * 105.95640);
+		double tmWhite = getL_EOTF(GetHDRRefWhiteCode(), White, Black, GetConfig()->m_GammaRel, GetConfig()->m_Split, 5, GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * 100.0;
+		aColor.SetX(aColor.GetX() * GetHDRRefLevel());
+		aColor.SetY(aColor.GetY() * GetHDRRefLevel());
+		aColor.SetZ(aColor.GetZ() * GetHDRRefLevel());
+		aColore.SetX(aColore.GetX() * GetHDRRefLevel());
+		aColore.SetY(aColore.GetY() * GetHDRRefLevel());
+		aColore.SetZ(aColore.GetZ() * GetHDRRefLevel());
 		RefWhite = YWhite / (tmWhite) ;
-		YWhite = YWhite * 94.37844 / (tmWhite);
+		YWhite = YWhite * GetHDRRefWhite() / (tmWhite);
 	}
 	
 	deltaE = SatColor.GetDeltaE(YWhite, aColore, RefWhite, isSpecial?CColorReference(HDTV, D65):(GetColorReference().m_standard==UHDTV3||GetColorReference().m_standard == UHDTV4)?CColorReference(UHDTV2):GetColorReference() , GetConfig()->m_dE_form, false, GetConfig()->gw_Weight );

@@ -221,7 +221,7 @@ void CRGBLevelWnd::Refresh(int minCol, int m_displayMode, int nSize)
 		
     	int nCount = m_pDocument -> GetMeasure () -> GetGrayScaleSize ();
         double YWhite = white.GetY();
-		double tmWhite = getL_EOTF(0.5022283, noDataColor, noDataColor, GetConfig()->m_GammaRel, GetConfig()->m_Split, 5, GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * 100.0;
+		double tmWhite = getL_EOTF(GetHDRRefWhiteCode(), noDataColor, noDataColor, GetConfig()->m_GammaRel, GetConfig()->m_Split, 5, GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * 100.0;
 
 			if ( (GetConfig()->m_GammaOffsetType == 5 && m_displayMode <=11 && m_displayMode >= 5) )
 			{
@@ -233,9 +233,9 @@ void CRGBLevelWnd::Refresh(int minCol, int m_displayMode, int nSize)
 				}
 				else
 				{
-					aReference.SetX((aReference.GetX() * 105.95640));
-					aReference.SetY((aReference.GetY() * 105.95640));
-					aReference.SetZ((aReference.GetZ() * 105.95640));
+					aReference.SetX((aReference.GetX() * GetHDRRefLevel()));
+					aReference.SetY((aReference.GetY() * GetHDRRefLevel()));
+					aReference.SetZ((aReference.GetZ() * GetHDRRefLevel()));
 				}
 			}
 
@@ -354,14 +354,14 @@ void CRGBLevelWnd::Refresh(int minCol, int m_displayMode, int nSize)
 							if (GetColorReference().m_standard == UHDTV || GetColorReference().m_standard == UHDTV2 || GetColorReference().m_standard == HDTV || minCol == 7)
 								white.SetY(!shiftDiffuse?92.254965:tmWhite);
 							else
-								white.SetY(94.37844);
+								white.SetY(GetHDRRefWhite());
 						}
 						else
 						{
 							if ( ( (GetColorReference().m_standard == UHDTV2 && minCol == satsize) || GetColorReference().m_standard == HDTV || GetColorReference().m_standard == UHDTV) && m_displayMode != 11)// && !shiftDiffuse) //&& nCol == (satsize)
 								white.SetY(92.25496);
 							else
-								white.SetY(94.37844);
+								white.SetY(GetHDRRefWhite());
 						}
 					}
 					else
@@ -370,12 +370,12 @@ void CRGBLevelWnd::Refresh(int minCol, int m_displayMode, int nSize)
 							if (GetColorReference().m_standard == UHDTV2 || GetColorReference().m_standard == HDTV || GetColorReference().m_standard == UHDTV || minCol == 7)
 								white.SetY(tmWhite);
 							else
-								white.SetY(94.37844);
+								white.SetY(GetHDRRefWhite());
 						else
 							if ((GetConfig()->m_CCMode >= MASCIOR50 && GetConfig()->m_CCMode <= CCMAXHDR) && m_displayMode == 11)
 								white.SetY(m_pDocument->GetMeasure()->GetGray((m_pDocument->GetMeasure()->GetGrayScaleSize()-1)).GetY());
 							else
-								white.SetY(94.37844);
+								white.SetY(GetHDRRefWhite());
 					}
 				}
 				aColor[0]=aColor[0]/white.GetY();
@@ -428,7 +428,7 @@ void CRGBLevelWnd::Refresh(int minCol, int m_displayMode, int nSize)
 				else
 				{
 						RefWhite = YWhite / (tmWhite);
-						YWhite = YWhite * 94.37844 / (tmWhite);
+						YWhite = YWhite * GetHDRRefWhite() / (tmWhite);
 				}
 			}
 			else
@@ -438,7 +438,7 @@ void CRGBLevelWnd::Refresh(int minCol, int m_displayMode, int nSize)
 				else
 				{
 					RefWhite = YWhite / (tmWhite) ;
-					YWhite = YWhite * 94.37844 / (tmWhite);
+					YWhite = YWhite * GetHDRRefWhite() / (tmWhite);
 				}
 			}
 		}
@@ -451,7 +451,7 @@ void CRGBLevelWnd::Refresh(int minCol, int m_displayMode, int nSize)
 				else
 				{
 					RefWhite = YWhite / (tmWhite) ;					
-					YWhite = YWhite * 94.37844 / (tmWhite) ;
+					YWhite = YWhite * GetHDRRefWhite() / (tmWhite) ;
 				}
 			}
 			else
@@ -461,7 +461,7 @@ void CRGBLevelWnd::Refresh(int minCol, int m_displayMode, int nSize)
 				else
 				{
 					RefWhite = YWhite / (tmWhite) ;
-					YWhite = YWhite * 94.37844 / (tmWhite) ;
+					YWhite = YWhite * GetHDRRefWhite() / (tmWhite) ;
 				}
 			}
 			}

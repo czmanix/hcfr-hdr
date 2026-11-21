@@ -572,7 +572,50 @@ EOTF DV_400_EOTF[220] = {
 
 std::vector<double> BT2390x,BT2390y;
 
-double m_HDRRefLevel = 1.0 / 94.37844 * 10000.; // 50.23% 8-bit level 126 (504) input luminance
+static double g_HDRRefWhite = HDR_REF_WHITE_DEFAULT;	// 50.23% 8-bit level 126 (504) input luminance by default
+
+bool IsHDRRefWhiteDefault ( double nits )
+{
+	return fabs(nits - HDR_REF_WHITE_DEFAULT) < 1e-4;
+}
+
+bool IsHDRRefWhiteDefault ()
+{
+	return IsHDRRefWhiteDefault(g_HDRRefWhite);
+}
+
+void SetHDRRefWhite ( double nits )
+{
+	g_HDRRefWhite = (nits >= 1.0 && nits <= 10000.0) ? nits : HDR_REF_WHITE_DEFAULT;
+}
+
+double GetHDRRefWhite ()
+{
+	return g_HDRRefWhite;
+}
+
+double GetHDRRefLevel ()
+{
+	return 10000.0 / g_HDRRefWhite;
+}
+
+static double PQ_InverseEOTF ( double L )	// L in cd/m2 -> PQ signal 0..1
+{
+	const double m1 = 0.1593017578125, m2 = 78.84375, c1 = 0.8359375, c2 = 18.8515625, c3 = 18.6875;
+	double p = pow(max(L, 0.0) / 10000.0, m1);
+	return pow((c1 + c2 * p) / (1.0 + c3 * p), m2);
+}
+
+double GetHDRRefWhiteCode ()
+{
+	// keep the historical constant for the default white
+	return IsHDRRefWhiteDefault() ? 0.5022283 : PQ_InverseEOTF(g_HDRRefWhite);
+}
+
+double GetHDRPatternCode ( double linear )
+{
+	return PQ_InverseEOTF(max(linear, 0.0) * g_HDRRefWhite);
+}
 double Scale = 10000.;
 
 int XYZtoCorColorTemp(double *xyz, double *temp)
@@ -3315,9 +3358,9 @@ bool GenerateCC24Colors (const CColorReference& colorReference, ColorRGBDisplay*
 				tempColor.SetRGBValue(ColorRGB(r,g,b),CColorReference(HDTV));
 				if (mode == 5)
 				{
-					tempColor.SetX(tempColor.GetX() / m_HDRRefLevel); //50.23% 8-bit reference for HDR-10
-					tempColor.SetY(tempColor.GetY() / m_HDRRefLevel);
-					tempColor.SetZ(tempColor.GetZ() / m_HDRRefLevel);
+					tempColor.SetX(tempColor.GetX() / GetHDRRefLevel()); //50.23% 8-bit reference for HDR-10
+					tempColor.SetY(tempColor.GetY() / GetHDRRefLevel());
+					tempColor.SetZ(tempColor.GetZ() / GetHDRRefLevel());
 				}
 			}
 			else
@@ -3437,9 +3480,9 @@ void GenerateSaturationColors (const CColorReference& colorReference, ColorRGBDi
 
 			if (mode == 5)
 			{
-				aColor.SetX(aColor.GetX() / m_HDRRefLevel );
-				aColor.SetY(aColor.GetY() / m_HDRRefLevel );
-				aColor.SetZ(aColor.GetZ() / m_HDRRefLevel );
+				aColor.SetX(aColor.GetX() / GetHDRRefLevel() );
+				aColor.SetY(aColor.GetY() / GetHDRRefLevel() );
+				aColor.SetZ(aColor.GetZ() / GetHDRRefLevel() );
 			}
 			rgbColor = aColor.GetRGBValue(CColorReference(UHDTV2));
 		}
@@ -3448,9 +3491,9 @@ void GenerateSaturationColors (const CColorReference& colorReference, ColorRGBDi
 			aColor.SetRGBValue(rgbColor, colorReference);
 			if (mode == 5)
 			{
-				aColor.SetX(aColor.GetX() / m_HDRRefLevel );
-				aColor.SetY(aColor.GetY() / m_HDRRefLevel );
-				aColor.SetZ(aColor.GetZ() / m_HDRRefLevel );
+				aColor.SetX(aColor.GetX() / GetHDRRefLevel() );
+				aColor.SetY(aColor.GetY() / GetHDRRefLevel() );
+				aColor.SetZ(aColor.GetZ() / GetHDRRefLevel() );
 			}
 			rgbColor = aColor.GetRGBValue(colorReference);
 		}

@@ -1014,7 +1014,7 @@ void CMainView::RefreshSelection(bool b_minCol, bool inMeasure)
 		CColor White = GetDocument()->GetMeasure()->GetOnOffWhite();
 		CColor Black = GetDocument()->GetMeasure()->GetOnOffBlack();
 		int mode = GetConfig()->m_GammaOffsetType;
-		double tmWhite = getL_EOTF(0.5022283, noDataColor, noDataColor, GetConfig()->m_GammaRel, GetConfig()->m_Split, 5, GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * 100.0 / 94.37844;
+		double tmWhite = getL_EOTF(GetHDRRefWhiteCode(), noDataColor, noDataColor, GetConfig()->m_GammaRel, GetConfig()->m_Split, 5, GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * 100.0 / GetHDRRefWhite();
 
 		double m_meas_rd, m_meas_gd, m_meas_bd, m_ref_rd, m_ref_gd, m_ref_bd;
 
@@ -1028,7 +1028,7 @@ void CMainView::RefreshSelection(bool b_minCol, bool inMeasure)
 			ref = ColorRGB(m_RefColor.GetRGBValue(bRef));
 			if (mode == 5)
 			{
-				double Yref = ((m_displayMode==0||m_displayMode==3||m_displayMode==4||m_displayMode==12)?(GetConfig()->m_useToneMap?((GetConfig()->m_DiffuseL/94.37844) /(GetConfig()->m_TargetMaxL/10000.)):tmWhite/(GetConfig()->m_TargetMaxL/10000.)):(m_displayMode == 1 && !(GetConfig()->m_colorStandard==UHDTV2||GetConfig()->m_colorStandard==UHDTV3))?(m_RefWhite * 10000./94.37844):(m_RefWhite * 10000./94.37844*tmWhite));
+				double Yref = ((m_displayMode==0||m_displayMode==3||m_displayMode==4||m_displayMode==12)?(GetConfig()->m_useToneMap?((GetConfig()->m_DiffuseL/94.37844) /(GetConfig()->m_TargetMaxL/10000.)):tmWhite/(GetConfig()->m_TargetMaxL/10000.)):(m_displayMode == 1 && !(GetConfig()->m_colorStandard==UHDTV2||GetConfig()->m_colorStandard==UHDTV3))?(m_RefWhite * 10000./GetHDRRefWhite()):(m_RefWhite * 10000./GetHDRRefWhite()*tmWhite));
 				m_ref_rd = min(max(ref[0]/Yref,0),1);
 				m_ref_gd = min(max(ref[1]/Yref,0),1);
 				m_ref_bd = min(max(ref[2]/Yref,0),1);
@@ -1100,7 +1100,7 @@ void CMainView::RefreshSelection(bool b_minCol, bool inMeasure)
 
 				if (mode == 5)
 				{
-					double Yref = ((m_displayMode==0||m_displayMode==3||m_displayMode==4||m_displayMode==12)?(GetConfig()->m_useToneMap?10000.*(GetConfig()->m_DiffuseL/94.37844):tmWhite*10000.):(m_displayMode == 1 && !(GetConfig()->m_colorStandard==UHDTV2||GetConfig()->m_colorStandard==UHDTV3))?(m_YWhite * 10000./94.37844):(m_YWhite * 10000./94.37844*tmWhite));
+					double Yref = ((m_displayMode==0||m_displayMode==3||m_displayMode==4||m_displayMode==12)?(GetConfig()->m_useToneMap?10000.*(GetConfig()->m_DiffuseL/94.37844):tmWhite*10000.):(m_displayMode == 1 && !(GetConfig()->m_colorStandard==UHDTV2||GetConfig()->m_colorStandard==UHDTV3))?(m_YWhite * 10000./GetHDRRefWhite()):(m_YWhite * 10000./GetHDRRefWhite()*tmWhite));
 					m_meas_r = min(max(meas[0]/Yref,0),1);
 					m_meas_g = min(max(meas[1]/Yref,0),1);
 					m_meas_b = min(max(meas[2]/Yref,0),1);
@@ -2415,7 +2415,7 @@ CString CMainView::GetItemText(CColor & aMeasure, double YWhite, CColor & aRefer
 						bool shiftDiffuse = (abs(GetConfig()->m_DiffuseL-94.0)>0.5);
 			            CColor White = GetDocument() -> GetMeasure () -> GetOnOffWhite();
 						CColor Black = GetDocument() -> GetMeasure() -> GetOnOffBlack();
-						double tmWhite = getL_EOTF(0.5022283, White, Black, GetConfig()->m_GammaRel, GetConfig()->m_Split, 5, GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * 100.0;
+						double tmWhite = getL_EOTF(GetHDRRefWhiteCode(), White, Black, GetConfig()->m_GammaRel, GetConfig()->m_Split, 5, GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * 100.0;
 						if (DVD)
 						{
 							tmWhite = getL_EOTF(0.50, White, Black, GetConfig()->m_GammaRel, GetConfig()->m_Split, 5, GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * 100.0;
@@ -2426,7 +2426,7 @@ CString CMainView::GetItemText(CColor & aMeasure, double YWhite, CColor & aRefer
 								else
 								{
 									RefWhite = YWhite / (tmWhite);
-									YWhite = YWhite * 94.37844 / (tmWhite);
+									YWhite = YWhite * GetHDRRefWhite() / (tmWhite);
 								}
 							}
 							else
@@ -2436,7 +2436,7 @@ CString CMainView::GetItemText(CColor & aMeasure, double YWhite, CColor & aRefer
 								else
 								{
 									RefWhite = YWhite / (tmWhite) ;
-									YWhite = YWhite * 94.37844 / (tmWhite);
+									YWhite = YWhite * GetHDRRefWhite() / (tmWhite);
 								}
 							}
 						}
@@ -2449,7 +2449,7 @@ CString CMainView::GetItemText(CColor & aMeasure, double YWhite, CColor & aRefer
 								else
 								{
 									RefWhite = YWhite / (tmWhite) ;					
-									YWhite = YWhite * 94.37844 / (tmWhite) ;
+									YWhite = YWhite * GetHDRRefWhite() / (tmWhite) ;
 								}
 							}
 							else
@@ -2459,7 +2459,7 @@ CString CMainView::GetItemText(CColor & aMeasure, double YWhite, CColor & aRefer
 								else
 								{
 									RefWhite = YWhite / (tmWhite) ;
-									YWhite = YWhite * 94.37844 / (tmWhite) ;
+									YWhite = YWhite * GetHDRRefWhite() / (tmWhite) ;
 								}
 							}
 						}
@@ -2622,42 +2622,42 @@ CString CMainView::GetItemText(CColor & aMeasure, double YWhite, CColor & aRefer
 					case 5:
 						satcolor = GetDocument()->GetMeasure()->GetRefSat(0, sat, (GetConfig()->m_colorStandard==HDTVa||GetConfig()->m_colorStandard==HDTVb));
 						if (GetConfig()->m_GammaOffsetType == 5)
-		                    RefLuma [nCol - 1] = satcolor.GetLuminance() * 105.95640;
+		                    RefLuma [nCol - 1] = satcolor.GetLuminance() * GetHDRRefLevel();
 						else
 		                    RefLuma [nCol - 1] = satcolor.GetLuminance();
 						break;
 					case 6:
                         satcolor = GetDocument()->GetMeasure()->GetRefSat(1, sat, (GetConfig()->m_colorStandard==HDTVa||GetConfig()->m_colorStandard==HDTVb));
 						if (GetConfig()->m_GammaOffsetType == 5)
-		                    RefLuma [nCol - 1] = satcolor.GetLuminance() * 105.95640;
+		                    RefLuma [nCol - 1] = satcolor.GetLuminance() * GetHDRRefLevel();
 						else
 		                    RefLuma [nCol - 1] = satcolor.GetLuminance();
 						break;
 					case 7:                                                
                         satcolor = GetDocument()->GetMeasure()->GetRefSat(2, sat, (GetConfig()->m_colorStandard==HDTVa||GetConfig()->m_colorStandard==HDTVb));
 						if (GetConfig()->m_GammaOffsetType == 5)
-		                    RefLuma [nCol - 1] = satcolor.GetLuminance() * 105.95640;
+		                    RefLuma [nCol - 1] = satcolor.GetLuminance() * GetHDRRefLevel();
 						else
 		                    RefLuma [nCol - 1] = satcolor.GetLuminance();
 						break;
 					case 8:
                         satcolor = GetDocument()->GetMeasure()->GetRefSat(3, sat, (GetConfig()->m_colorStandard==HDTVa||GetConfig()->m_colorStandard==HDTVb));
 						if (GetConfig()->m_GammaOffsetType == 5)
-		                    RefLuma [nCol - 1] = satcolor.GetLuminance() * 105.95640;
+		                    RefLuma [nCol - 1] = satcolor.GetLuminance() * GetHDRRefLevel();
 						else
 		                    RefLuma [nCol - 1] = satcolor.GetLuminance();
 						break;
 					case 9:
                         satcolor = GetDocument()->GetMeasure()->GetRefSat(4, sat, (GetConfig()->m_colorStandard==HDTVa||GetConfig()->m_colorStandard==HDTVb));
 						if (GetConfig()->m_GammaOffsetType == 5)
-		                    RefLuma [nCol - 1] = satcolor.GetLuminance() * 105.95640;
+		                    RefLuma [nCol - 1] = satcolor.GetLuminance() * GetHDRRefLevel();
 						else
 		                    RefLuma [nCol - 1] = satcolor.GetLuminance();
 						break;
 					case 10:
                         satcolor = GetDocument()->GetMeasure()->GetRefSat(5, sat, (GetConfig()->m_colorStandard==HDTVa||GetConfig()->m_colorStandard==HDTVb));
 						if (GetConfig()->m_GammaOffsetType == 5)
-		                    RefLuma [nCol - 1] = satcolor.GetLuminance() * 105.95640;
+		                    RefLuma [nCol - 1] = satcolor.GetLuminance() * GetHDRRefLevel();
 						else
 		                    RefLuma [nCol - 1] = satcolor.GetLuminance();
 						break;
@@ -2685,7 +2685,7 @@ CString CMainView::GetItemText(CColor & aMeasure, double YWhite, CColor & aRefer
 				if ( isHDR )
 				{
 					bool shiftDiffuse=(abs(GetConfig()->m_DiffuseL-94.0)>0.5);
-					double tmWhite = getL_EOTF(0.5022283, White, Black, GetConfig()->m_GammaRel, GetConfig()->m_Split, 5, GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * 100.0;
+					double tmWhite = getL_EOTF(GetHDRRefWhiteCode(), White, Black, GetConfig()->m_GammaRel, GetConfig()->m_Split, 5, GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * 100.0;
 					if (DVD)
 					{
 						tmWhite = getL_EOTF(0.50, White, Black, GetConfig()->m_GammaRel, GetConfig()->m_Split, 5, GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * 100.0;
@@ -2694,14 +2694,14 @@ CString CMainView::GetItemText(CColor & aMeasure, double YWhite, CColor & aRefer
 							if (GetColorReference().m_standard == UHDTV || GetColorReference().m_standard == UHDTV2 || GetColorReference().m_standard == HDTV || nCol == 7)
 								white.SetY(!shiftDiffuse?92.254965:tmWhite);
 							else
-								white.SetY(94.37844);
+								white.SetY(GetHDRRefWhite());
 						}
 						else
 						{
 							if ( ( (GetColorReference().m_standard == UHDTV2 && nCol == satsize) || GetColorReference().m_standard == HDTV || GetColorReference().m_standard == UHDTV) && m_displayMode != 11)// && !shiftDiffuse) //&& nCol == (satsize)
 								white.SetY(92.25496);
 							else
-								white.SetY(94.37844);
+								white.SetY(GetHDRRefWhite());
 						}
 					}
 					else
@@ -2710,12 +2710,12 @@ CString CMainView::GetItemText(CColor & aMeasure, double YWhite, CColor & aRefer
 							if (GetColorReference().m_standard == UHDTV2 || GetColorReference().m_standard == HDTV || GetColorReference().m_standard == UHDTV || nCol == 7)
 								white.SetY(tmWhite);
 							else
-								white.SetY(94.37844);
+								white.SetY(GetHDRRefWhite());
 						else
 							if ((GetConfig()->m_CCMode >= MASCIOR50 && GetConfig()->m_CCMode <= CCMAXHDR) && m_displayMode == 11)
 								white.SetY(GetDocument()->GetMeasure()->GetGray((GetDocument()->GetMeasure()->GetGrayScaleSize()-1)).GetY());
 							else
-								white.SetY(94.37844);
+								white.SetY(GetHDRRefWhite());
 					}
 				}
 
@@ -3654,9 +3654,9 @@ void CMainView::UpdateGrid()
 				}
 				else
 				{
-					refColor.SetX((refColor.GetX() * 105.95640));
-					refColor.SetY((refColor.GetY() * 105.95640));
-					refColor.SetZ((refColor.GetZ() * 105.95640));
+					refColor.SetX((refColor.GetX() * GetHDRRefLevel()));
+					refColor.SetY((refColor.GetY() * GetHDRRefLevel()));
+					refColor.SetZ((refColor.GetZ() * GetHDRRefLevel()));
 				}
 			}
 

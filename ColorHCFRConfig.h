@@ -86,6 +86,7 @@ public:
 	double m_GammaRef;
 	double m_GammaAvg;
 	double m_MasterMinL, m_MasterMaxL, m_ContentMaxL, m_FrameAvgMaxL, m_TargetMinL, m_TargetMaxL, m_DiffuseL, m_TargetSysGamma, m_BT2390_BS;
+	double m_HDRRefWhite;	// reference white of the HDR colour patterns [cd/m2]
 	double m_GammaRel, m_BT2390_WS1, m_BT2390_WS; 
 	double m_Split;
 	double m_ManualBlack;
@@ -162,6 +163,7 @@ public:
 	bool SetGeneratorType(GeneratorType type);
 	GeneratorType GetGeneratorType(const CString &generatorString) const;
 	GeneratorType GetGeneratorType() const;
+	void ApplyHDRRefWhite();	// passes m_HDRRefWhite to libHCFR (the manual DVD generator keeps the default)
 
 	BOOL IsProfileEntryDefined(LPCTSTR lpszSection,LPCTSTR lpszEntry);
 

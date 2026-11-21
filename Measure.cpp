@@ -48,6 +48,33 @@ static char THIS_FILE[]=__FILE__;
 
 IMPLEMENT_SERIAL(CMeasure, CObject, 1)
 
+// HDR colour patterns for a reference white other than the default: PQ signal (percent) of a
+// primary or secondary (k = R, G, B, Y, C, M) of the colour standard in the BT.2020 container
+static ColorRGBDisplay HDRContainerPattern(int k)
+{
+	CColorReference cRef = GetColorReference();
+	ColorXYZ src;
+	switch (k)
+	{
+		case 0:	src = cRef.GetRed(); break;
+		case 1:	src = cRef.GetGreen(); break;
+		case 2:	src = cRef.GetBlue(); break;
+		case 3:	src = cRef.GetYellow(); break;
+		case 4:	src = cRef.GetCyan(); break;
+		default: src = cRef.GetMagenta(); break;
+	}
+	CColor aColor;
+	aColor.SetXYZValue(src);
+	ColorRGB rgb = aColor.GetRGBValue(CColorReference(UHDTV2));
+	return ColorRGBDisplay(100.0 * GetHDRPatternCode(rgb[0]), 100.0 * GetHDRPatternCode(rgb[1]), 100.0 * GetHDRPatternCode(rgb[2]));
+}
+
+// Reference value of a pattern channel (linear, relative to the reference white) after the PQ target
+static double HDRPatternLinear(double linear, const CColor & PrimeWhite)
+{
+	return getL_EOTF(GetHDRPatternCode(linear), PrimeWhite, noDataColor, 0, 0, 5, GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL, GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * GetHDRRefLevel() / 100.0;
+}
+
 CMeasure::CMeasure()
 {
 	m_NMeasurements = 0;
@@ -235,8 +262,11 @@ void CMeasure::Serialize(CArchive& ar)
 
 	if (ar.IsStoring())
 	{
-	    int version = 17;
+	    int version = IsHDRRefWhiteDefault(GetConfig()->m_HDRRefWhite) ? 17 : 18;
 		ar << version;
+
+		if (version > 17)
+			ar << GetConfig()->m_HDRRefWhite;
 
 		ar << GetConfig()->m_BT2390_BS;
 		ar << GetConfig()->m_BT2390_WS;
@@ -369,8 +399,14 @@ void CMeasure::Serialize(CArchive& ar)
 		ar >> version;
 
 		
-		if ( version > 17 )
+		if ( version > 18 )
 			AfxThrowArchiveException ( CArchiveException::badSchema );
+
+		if ( version > 17 )
+			ar >> GetConfig()->m_HDRRefWhite;
+		else
+			GetConfig()->m_HDRRefWhite = HDR_REF_WHITE_DEFAULT;
+		GetConfig()->ApplyHDRRefWhite();
 
 
 		if ( version > 16)
@@ -1315,7 +1351,7 @@ BOOL CMeasure::MeasureGrayScaleAndColors(CSensor *pSensor, CGenerator *pGenerato
 	double primaryIRELevel=100.0;	
 	if (mode == 5)
 	{
-		primaryIRELevel = 50.22831;
+		primaryIRELevel = IsHDRRefWhiteDefault() ? 50.22831 : 100.0 * GetHDRRefWhiteCode();
 	//Special Case white for Mascior's HDR disk
 		if(pGenerator->GetName() == str && (GetColorReference().m_standard == UHDTV4 || GetColorReference().m_standard == UHDTV3 || GetColorReference().m_standard == UHDTV2 || GetColorReference().m_standard == UHDTV || GetColorReference().m_standard == HDTV))
 			primaryIRELevel = 50.00;
@@ -1402,6 +1438,14 @@ BOOL CMeasure::MeasureGrayScaleAndColors(CSensor *pSensor, CGenerator *pGenerato
 
 		GenColors [ 6 ] = ColorRGBDisplay(primaryIRELevel,primaryIRELevel,primaryIRELevel);
 		GenColors [ 7 ] = ColorRGBDisplay(0,0,0);	
+	}
+
+	// reference white other than the default: P3 / Rec.709 primaries and secondaries in the
+	// BT.2020 container are computed for it instead of taken from the tables above
+	if (mode == 5 && !IsHDRRefWhiteDefault() && (GetColorReference().m_standard == UHDTV3 || GetColorReference().m_standard == UHDTV4))
+	{
+		for (int k = 0; k < 6; k++)
+			GenColors[k] = HDRContainerPattern(k);
 	}
 
 	//convert to HDR levels if needed for psuedo color spaces
@@ -3920,7 +3964,7 @@ BOOL CMeasure::MeasurePrimaries(CSensor *pSensor, CGenerator *pGenerator, CDataS
 
 	if (mode == 5)
 	{
-		primaryIRELevel = 50.22831;
+		primaryIRELevel = IsHDRRefWhiteDefault() ? 50.22831 : 100.0 * GetHDRRefWhiteCode();
 	//Special Case white for Mascior's HDR disk
 		if(pGenerator->GetName() == str && (GetColorReference().m_standard == UHDTV4 || GetColorReference().m_standard == UHDTV3 || GetColorReference().m_standard == UHDTV2 || GetColorReference().m_standard == UHDTV || GetColorReference().m_standard == HDTV ))
 			primaryIRELevel = 50.00;
@@ -3991,6 +4035,14 @@ BOOL CMeasure::MeasurePrimaries(CSensor *pSensor, CGenerator *pGenerator, CDataS
 
 		GenColors [ 3 ] = ColorRGBDisplay(primaryIRELevel,primaryIRELevel,primaryIRELevel);
 		GenColors [ 4 ] = ColorRGBDisplay(0,0,0);		
+	}
+
+	// reference white other than the default: P3 / Rec.709 primaries and secondaries in the
+	// BT.2020 container are computed for it instead of taken from the tables above
+	if (mode == 5 && !IsHDRRefWhiteDefault() && (GetColorReference().m_standard == UHDTV3 || GetColorReference().m_standard == UHDTV4))
+	{
+		for (int k = 0; k < 3; k++)
+			GenColors[k] = HDRContainerPattern(k);
 	}
 
 	//convert to HDR levels if needed for psuedo color spaces
@@ -4196,7 +4248,7 @@ BOOL CMeasure::MeasureSecondaries(CSensor *pSensor, CGenerator *pGenerator, CDat
 
 	if (mode == 5)
 	{
-		primaryIRELevel = 50.22831;
+		primaryIRELevel = IsHDRRefWhiteDefault() ? 50.22831 : 100.0 * GetHDRRefWhiteCode();
 	//Special Case white for Mascior's HDR disk
 		if(pGenerator->GetName() == str && (GetColorReference().m_standard == UHDTV4 || GetColorReference().m_standard == UHDTV3 || GetColorReference().m_standard == UHDTV2 || GetColorReference().m_standard == UHDTV || GetColorReference().m_standard == HDTV))
 			primaryIRELevel = 50.00;
@@ -4286,6 +4338,14 @@ BOOL CMeasure::MeasureSecondaries(CSensor *pSensor, CGenerator *pGenerator, CDat
 
 		GenColors [ 6 ] = ColorRGBDisplay(primaryIRELevel,primaryIRELevel,primaryIRELevel);
 		GenColors [ 7 ] = ColorRGBDisplay(0,0,0);	
+	}
+
+	// reference white other than the default: P3 / Rec.709 primaries and secondaries in the
+	// BT.2020 container are computed for it instead of taken from the tables above
+	if (mode == 5 && !IsHDRRefWhiteDefault() && (GetColorReference().m_standard == UHDTV3 || GetColorReference().m_standard == UHDTV4))
+	{
+		for (int k = 0; k < 6; k++)
+			GenColors[k] = HDRContainerPattern(k);
 	}
 
 	//convert to HDR levels if needed for psuedo color spaces
@@ -6372,9 +6432,15 @@ CColor CMeasure::GetRefPrimary(int i) const
 	double r,g,b;
 	if ((mode == 5 || mode == 7) && (GetColorReference().m_standard == UHDTV3||GetColorReference().m_standard == UHDTV4))
 	{
-		r=getL_EOTF(GetColorReference().m_standard == UHDTV3?(mode==7?0.94977169:0.474325):(mode==7?0.91324201:0.456621),PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(105.95640 / 100.0):1.0);
-		g=getL_EOTF(GetColorReference().m_standard == UHDTV3?(mode==7?0.32420091:0.237609):(mode==7?0.45205479:0.26484018),PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(105.95640 / 100.0):1.0);
-		b=getL_EOTF(GetColorReference().m_standard == UHDTV3?(0.0):(mode==7?0.0:0.17351598),PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(105.95640 / 100.0):1.0);
+		r=getL_EOTF(GetColorReference().m_standard == UHDTV3?(mode==7?0.94977169:0.474325):(mode==7?0.91324201:0.456621),PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(GetHDRRefLevel() / 100.0):1.0);
+		g=getL_EOTF(GetColorReference().m_standard == UHDTV3?(mode==7?0.32420091:0.237609):(mode==7?0.45205479:0.26484018),PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(GetHDRRefLevel() / 100.0):1.0);
+		b=getL_EOTF(GetColorReference().m_standard == UHDTV3?(0.0):(mode==7?0.0:0.17351598),PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(GetHDRRefLevel() / 100.0):1.0);
+		if (mode == 5 && !IsHDRRefWhiteDefault())
+		{
+			r = HDRPatternLinear(rgbr[0], PrimeWhite);
+			g = HDRPatternLinear(rgbr[1], PrimeWhite);
+			b = HDRPatternLinear(rgbr[2], PrimeWhite);
+		}
 	}
 	else
 	{
@@ -6412,9 +6478,15 @@ CColor CMeasure::GetRefPrimary(int i) const
     aColorr.SetRGBValue (ColorRGB(r,g,b), ((cRef.m_standard == UHDTV3||cRef.m_standard == UHDTV4)?CColorReference(UHDTV2):GetColorReference()));	
 	if ((mode == 5 || mode == 7) && (GetColorReference().m_standard == UHDTV3||GetColorReference().m_standard == UHDTV4))
 	{
-		r=getL_EOTF(GetColorReference().m_standard == UHDTV3?(mode==7?0.69406393:0.351598):(mode==7?0.79452055:0.39726027),PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(105.95640 / 100.0):1.0);
-		g=getL_EOTF(GetColorReference().m_standard == UHDTV3?(mode==7?0.99086758:0.497717):(mode==7?0.98630137:0.49315068),PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(105.95640 / 100.0):1.0);
-		b=getL_EOTF(GetColorReference().m_standard == UHDTV3?(mode==7?0.0:0.178082):(mode==7?0.51141553:0.28310502),PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(105.95640 / 100.0):1.0);
+		r=getL_EOTF(GetColorReference().m_standard == UHDTV3?(mode==7?0.69406393:0.351598):(mode==7?0.79452055:0.39726027),PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(GetHDRRefLevel() / 100.0):1.0);
+		g=getL_EOTF(GetColorReference().m_standard == UHDTV3?(mode==7?0.99086758:0.497717):(mode==7?0.98630137:0.49315068),PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(GetHDRRefLevel() / 100.0):1.0);
+		b=getL_EOTF(GetColorReference().m_standard == UHDTV3?(mode==7?0.0:0.178082):(mode==7?0.51141553:0.28310502),PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(GetHDRRefLevel() / 100.0):1.0);
+		if (mode == 5 && !IsHDRRefWhiteDefault())
+		{
+			r = HDRPatternLinear(rgbg[0], PrimeWhite);
+			g = HDRPatternLinear(rgbg[1], PrimeWhite);
+			b = HDRPatternLinear(rgbg[2], PrimeWhite);
+		}
 	}
 	else
 	{
@@ -6452,9 +6524,15 @@ CColor CMeasure::GetRefPrimary(int i) const
 
 	if ((mode == 5 || mode == 7) && (GetColorReference().m_standard == UHDTV3||GetColorReference().m_standard == UHDTV4))
 	{
-		r=getL_EOTF(GetColorReference().m_standard == UHDTV3?(mode==7?0.33789954:0.242009):(mode==7?0.30136986:0.23287671),PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(105.95640 / 100.0):1.0);
-		g=getL_EOTF(GetColorReference().m_standard == UHDTV3?(mode==7?0.0:0.159817):(mode==7?0.0:0.15525114),PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(105.95640 / 100.0):1.0);
-		b=getL_EOTF(GetColorReference().m_standard == UHDTV3?(mode==7?0.99543379:0.502283):(mode==7?0.98173516:0.49315068),PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(105.95640 / 100.0):1.0);
+		r=getL_EOTF(GetColorReference().m_standard == UHDTV3?(mode==7?0.33789954:0.242009):(mode==7?0.30136986:0.23287671),PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(GetHDRRefLevel() / 100.0):1.0);
+		g=getL_EOTF(GetColorReference().m_standard == UHDTV3?(mode==7?0.0:0.159817):(mode==7?0.0:0.15525114),PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(GetHDRRefLevel() / 100.0):1.0);
+		b=getL_EOTF(GetColorReference().m_standard == UHDTV3?(mode==7?0.99543379:0.502283):(mode==7?0.98173516:0.49315068),PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(GetHDRRefLevel() / 100.0):1.0);
+		if (mode == 5 && !IsHDRRefWhiteDefault())
+		{
+			r = HDRPatternLinear(rgbb[0], PrimeWhite);
+			g = HDRPatternLinear(rgbb[1], PrimeWhite);
+			b = HDRPatternLinear(rgbb[2], PrimeWhite);
+		}
 	}
 	else
 	{
@@ -6532,9 +6610,15 @@ CColor CMeasure::GetRefSecondary(int i) const
 	int mode = GetConfig()->m_GammaOffsetType;
 	if ((mode == 5 || mode == 7) && (cRef.m_standard == UHDTV3||cRef.m_standard == UHDTV4))
 	{
-		r=getL_EOTF(cRef.m_standard == UHDTV3?(mode==7?0.99086758:0.4977169):(mode==7?0.99086758:0.49771689), PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(105.95640 / 100.0):1.0);
-		g=getL_EOTF(cRef.m_standard == UHDTV3?(mode==7?0.99543379:0.5022831):(mode==7?1.0:0.50228311), PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(105.95640 / 100.0):1.0);
-		b=getL_EOTF(cRef.m_standard == UHDTV3?(mode==7?0.0:0.1735160):(mode==7?0.55251142:0.29680365), PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(105.95640 / 100.0):1.0);
+		r=getL_EOTF(cRef.m_standard == UHDTV3?(mode==7?0.99086758:0.4977169):(mode==7?0.99086758:0.49771689), PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(GetHDRRefLevel() / 100.0):1.0);
+		g=getL_EOTF(cRef.m_standard == UHDTV3?(mode==7?0.99543379:0.5022831):(mode==7?1.0:0.50228311), PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(GetHDRRefLevel() / 100.0):1.0);
+		b=getL_EOTF(cRef.m_standard == UHDTV3?(mode==7?0.0:0.1735160):(mode==7?0.55251142:0.29680365), PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(GetHDRRefLevel() / 100.0):1.0);
+		if (mode == 5 && !IsHDRRefWhiteDefault())
+		{
+			r = HDRPatternLinear(rgby[0], PrimeWhite);
+			g = HDRPatternLinear(rgby[1], PrimeWhite);
+			b = HDRPatternLinear(rgby[2], PrimeWhite);
+		}
 	}
 	else
 	{
@@ -6572,9 +6656,15 @@ CColor CMeasure::GetRefSecondary(int i) const
 
 	if ((mode == 5 || mode ==7) && (cRef.m_standard == UHDTV3||cRef.m_standard == UHDTV4))
 	{
-		r=getL_EOTF(cRef.m_standard == UHDTV3?(mode==7?0.73515982:0.3698630):(mode==7?0.81735160:0.40639269),PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(105.95640 / 100.0):1.0);
-		g=getL_EOTF(cRef.m_standard == UHDTV3?(mode==7?0.99086758:0.4977169):(mode==7?0.98630137:0.49315068),PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(105.95640 / 100.0):1.0);
-		b=getL_EOTF(cRef.m_standard == UHDTV3?(mode==7?100.0:0.50228311):(mode==7?0.99543379:0.50228311),PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(105.95640 / 100.0):1.0);
+		r=getL_EOTF(cRef.m_standard == UHDTV3?(mode==7?0.73515982:0.3698630):(mode==7?0.81735160:0.40639269),PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(GetHDRRefLevel() / 100.0):1.0);
+		g=getL_EOTF(cRef.m_standard == UHDTV3?(mode==7?0.99086758:0.4977169):(mode==7?0.98630137:0.49315068),PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(GetHDRRefLevel() / 100.0):1.0);
+		b=getL_EOTF(cRef.m_standard == UHDTV3?(mode==7?100.0:0.50228311):(mode==7?0.99543379:0.50228311),PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(GetHDRRefLevel() / 100.0):1.0);
+		if (mode == 5 && !IsHDRRefWhiteDefault())
+		{
+			r = HDRPatternLinear(rgbc[0], PrimeWhite);
+			g = HDRPatternLinear(rgbc[1], PrimeWhite);
+			b = HDRPatternLinear(rgbc[2], PrimeWhite);
+		}
 	}
 	else
 	{
@@ -6611,9 +6701,15 @@ CColor CMeasure::GetRefSecondary(int i) const
 
 	if ((mode == 5 || mode == 7) && (cRef.m_standard == UHDTV3||cRef.m_standard == UHDTV4))
 	{
-		r=getL_EOTF(cRef.m_standard == UHDTV3?(mode==7?0.95890411:0.4794521):(mode==7?0.92694064:0.46118721),PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(105.95640 / 100.0):1.0);
-		g=getL_EOTF(cRef.m_standard == UHDTV3?(mode==7?0.40182648:0.2557078):(mode==7?0.49315068:0.27853881),PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(105.95640 / 100.0):1.0);
-		b=getL_EOTF(cRef.m_standard == UHDTV3?(mode==7?0.99543379:0.5022831):(mode==7?0.98173516:0.49315068),PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(105.95640 / 100.0):1.0);
+		r=getL_EOTF(cRef.m_standard == UHDTV3?(mode==7?0.95890411:0.4794521):(mode==7?0.92694064:0.46118721),PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(GetHDRRefLevel() / 100.0):1.0);
+		g=getL_EOTF(cRef.m_standard == UHDTV3?(mode==7?0.40182648:0.2557078):(mode==7?0.49315068:0.27853881),PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(GetHDRRefLevel() / 100.0):1.0);
+		b=getL_EOTF(cRef.m_standard == UHDTV3?(mode==7?0.99543379:0.5022831):(mode==7?0.98173516:0.49315068),PrimeWhite,noDataColor,0,0,mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * (mode==5?(GetHDRRefLevel() / 100.0):1.0);
+		if (mode == 5 && !IsHDRRefWhiteDefault())
+		{
+			r = HDRPatternLinear(rgbm[0], PrimeWhite);
+			g = HDRPatternLinear(rgbm[1], PrimeWhite);
+			b = HDRPatternLinear(rgbm[2], PrimeWhite);
+		}
 	}
 	else
 	{
@@ -6773,10 +6869,10 @@ CColor CMeasure::GetRefSat(int i, double sat_ratio, bool special) const
 	CColor Black = CMeasure::GetOnOffBlack();
     double gamma=GetConfig()->m_useMeasuredGamma?(GetConfig()->m_GammaAvg):(GetConfig()->m_GammaRef);
 
-	double tmWhite = getL_EOTF(0.5022283, White, Black, GetConfig()->m_GammaRel, GetConfig()->m_Split, 5, GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * 100.0;
+	double tmWhite = getL_EOTF(GetHDRRefWhiteCode(), White, Black, GetConfig()->m_GammaRel, GetConfig()->m_Split, 5, GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * 100.0;
 
 	if (mode == 5 && sat_ratio == 1 && GetConfig()->m_colorStandard != UHDTV3 && GetConfig()->m_colorStandard != UHDTV4)
-		YLuma = YLuma * tmWhite / 94.37844;
+		YLuma = YLuma * tmWhite / GetHDRRefWhite();
 
 	aColor.SetxyYValue (x, y, YLuma);
 
@@ -6784,9 +6880,9 @@ CColor CMeasure::GetRefSat(int i, double sat_ratio, bool special) const
 
 	if (mode == 5)
 	{
-		aColor.SetX(aColor.GetX()/105.95640);
-		aColor.SetY(aColor.GetY()/105.95640);
-		aColor.SetZ(aColor.GetZ()/105.95640);
+		aColor.SetX(aColor.GetX()/GetHDRRefLevel());
+		aColor.SetY(aColor.GetY()/GetHDRRefLevel());
+		aColor.SetZ(aColor.GetZ()/GetHDRRefLevel());
 		GetConfig()->m_bHDR100 = TRUE;
 	}
 
@@ -7230,9 +7326,9 @@ void CMeasure::GetRefCC24Sat(int i, CColor& ccRef) const
 			tempColor.SetRGBValue(ColorRGB(r,g,b), CColorReference((GetConfig()->m_CCMode == MASCIOR50)?UHDTV:HDTV));
 			if (mode == 5)
 			{
-				tempColor.SetX(tempColor.GetX() / 105.95640 ); //50% reference for HDR-10
-				tempColor.SetY(tempColor.GetY() / 105.95640 );
-				tempColor.SetZ(tempColor.GetZ() / 105.95640 );
+				tempColor.SetX(tempColor.GetX() / GetHDRRefLevel() ); //50% reference for HDR-10
+				tempColor.SetY(tempColor.GetY() / GetHDRRefLevel() );
+				tempColor.SetZ(tempColor.GetZ() / GetHDRRefLevel() );
 			}
 		}
 		else

@@ -274,6 +274,7 @@ void CColorHCFRConfig::InitDefaults()
 	m_BT2390_WS1 = 25;
 	m_TargetMaxL = 120.;
 	m_DiffuseL = 94.37844;
+	m_HDRRefWhite = 94.37844;
     m_GammaRel=0.0;
 	m_Split=100.0; //all input offset
 	m_userBlack = FALSE;
@@ -374,6 +375,7 @@ BOOL CColorHCFRConfig::LoadSettings()
 	m_BT2390_WS=GetProfileDouble("References","BT2390WhiteSlopeFactor",0.0);
 	m_BT2390_WS1=GetProfileDouble("References","BT2390WhiteSlopeFactor1",25);
 	m_DiffuseL=GetProfileDouble("References","DiffuseLValue", 94.37844);
+	m_HDRRefWhite=GetProfileDouble("References","HDRRefWhite", 94.37844);
 	m_GammaRel=GetProfileDouble("References","GammaRelValue",0.0);
 	m_Split=GetProfileDouble("References","GammaSplitValue",100.0);
 	m_ManualBlack=GetProfileDouble("References","Manual Black Level",0.0);
@@ -434,6 +436,7 @@ BOOL CColorHCFRConfig::LoadSettings()
 	m_generatorTypes[enumAutomatic] = Msg;
 	CString generatorChoice = GetProfileString("Defaults", "Generator", (LPCSTR)Msg);
 	m_generatorType = GetGeneratorType(generatorChoice);
+	ApplyHDRRefWhite();
 
 	GetCColors();
 	return TRUE;
@@ -485,6 +488,7 @@ void CColorHCFRConfig::SaveSettings()
 	WriteProfileDouble("References","TargetMinLValue",m_TargetMinL);
 	WriteProfileDouble("References","TargetMaxLValue",m_TargetMaxL);
 	WriteProfileDouble("References","DiffuseLValue",m_DiffuseL);
+	WriteProfileDouble("References","HDRRefWhite",m_HDRRefWhite);
 	WriteProfileDouble("References","Manual Black Level",m_ManualBlack);
 	WriteProfileInt("References","Use Black Level",m_userBlack);
 	WriteProfileInt("References","Override Targets",m_bOverRideTargs);
@@ -566,6 +570,7 @@ void CColorHCFRConfig::SetPropertiesSheetValues()
   	m_referencesPropertiesPage.m_BT2390_WS=m_BT2390_WS;
   	m_referencesPropertiesPage.m_BT2390_WS1=m_BT2390_WS1;
   	m_referencesPropertiesPage.m_DiffuseL=m_DiffuseL;
+  	m_referencesPropertiesPage.m_HDRRefWhite=m_HDRRefWhite;
   	m_referencesPropertiesPage.m_Split=m_Split;
 	m_referencesPropertiesPage.m_userBlack=m_userBlack;
 	m_referencesPropertiesPage.m_bOverRideTargs=m_bOverRideTargs;
@@ -691,6 +696,8 @@ BOOL CColorHCFRConfig::GetPropertiesSheetValues()
 	m_BT2390_WS=m_referencesPropertiesPage.m_BT2390_WS;
 	m_BT2390_WS1=m_referencesPropertiesPage.m_BT2390_WS1;
 	m_DiffuseL=m_referencesPropertiesPage.m_DiffuseL;
+	m_HDRRefWhite=m_referencesPropertiesPage.m_HDRRefWhite;
+	ApplyHDRRefWhite();
 	m_Split=m_referencesPropertiesPage.m_Split;
 	m_userBlack=m_referencesPropertiesPage.m_userBlack;
 	m_bOverRideTargs=m_referencesPropertiesPage.m_bOverRideTargs;
@@ -852,6 +859,7 @@ bool CColorHCFRConfig::SetGeneratorType(GeneratorType type)
 	{
 		m_generatorType = type;
 		WriteProfileString("Defaults", "Generator", it->second);
+		ApplyHDRRefWhite();
 		return true;
 	}
 	return false;
@@ -874,6 +882,12 @@ CColorHCFRConfig::GeneratorType CColorHCFRConfig::GetGeneratorType(const CString
 CColorHCFRConfig::GeneratorType CColorHCFRConfig::GetGeneratorType() const
 {
 	return m_generatorType;
+}
+
+void CColorHCFRConfig::ApplyHDRRefWhite()
+{
+	// discs of the manual DVD generator have their patterns at the default white
+	SetHDRRefWhite(m_generatorType == enumManual ? HDR_REF_WHITE_DEFAULT : m_HDRRefWhite);
 }
 
 BOOL CColorHCFRConfig::IsProfileEntryDefined(LPCTSTR lpszSection,LPCTSTR lpszEntry)

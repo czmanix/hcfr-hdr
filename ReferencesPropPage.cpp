@@ -72,6 +72,7 @@ CReferencesPropPage::CReferencesPropPage() : CPropertyPageWithHelp(CReferencesPr
 	m_TargetMaxLUser = m_TargetMaxL;
 	m_DiffuseL = 94.37844;
 	m_DiffuseLUser = m_DiffuseL;
+	m_HDRRefWhite = 94.37844;
     //}}AFX_DATA_INIT
 
 	m_isModified=FALSE;
@@ -102,6 +103,8 @@ void CReferencesPropPage::DoDataExchange(CDataExchange* pDX)
   	DDX_Text(pDX, IDC_EDIT_DIFFUSE_WHITE, m_DiffuseL);
   	DDX_Control(pDX, IDC_EDIT_DIFFUSE_WHITE, m_DiffuseLCtrl);
 	DDV_MinMaxDouble(pDX, m_DiffuseL, 1., 200.);
+	DDX_Text(pDX, IDC_EDIT_HDR_REF_WHITE, m_HDRRefWhite);
+	DDV_MinMaxDouble(pDX, m_HDRRefWhite, 10., 1000.);
 	DDX_Text(pDX, IDC_EDIT_MASTER_MINL, m_MasterMinL);
 	DDX_Control(pDX, IDC_EDIT_MASTER_MINL, m_MasterMinLCtrl);
 	DDV_MinMaxDouble(pDX, m_MasterMinL, 0., 0.5);
@@ -195,6 +198,7 @@ BEGIN_MESSAGE_MAP(CReferencesPropPage, CPropertyPageWithHelp)
 	ON_EN_CHANGE(IDC_BLUE_X, OnChangeEditGammaAvg)
 	ON_EN_CHANGE(IDC_BLUE_Y, OnChangeEditGammaAvg)
 	ON_EN_CHANGE(IDC_EDIT_DIFFUSE_WHITE, OnChangeEditGammaAvg)
+	ON_EN_CHANGE(IDC_EDIT_HDR_REF_WHITE, OnChangeEditGammaAvg)
 	ON_EN_CHANGE(IDC_EDIT_MASTER_MINL, OnChangeEditGammaAvg)
 	ON_EN_CHANGE(IDC_EDIT_MASTER_MAXL, OnChangeEditGammaAvg)
 	ON_EN_CHANGE(IDC_EDIT_CONTENT_MAXL, OnChangeEditGammaAvg)

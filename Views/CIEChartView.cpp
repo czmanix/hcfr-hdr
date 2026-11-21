@@ -328,7 +328,7 @@ void CCIEChartGrapher::DrawAlphaBitmap(CDC *pDC, const CCIEGraphPoint& aGraphPoi
 	{
 		CString str, str1, str2, str3;
 		CColor NoDataColor;
-		double tmWhite = getL_EOTF(0.5022283, NoDataColor, NoDataColor, GetConfig()->m_GammaRel, GetConfig()->m_Split, 5, GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * 100.0;
+		double tmWhite = getL_EOTF(GetHDRRefWhiteCode(), NoDataColor, NoDataColor, GetConfig()->m_GammaRel, GetConfig()->m_Split, 5, GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * 100.0;
 		
 		int x=aGraphPoint.GetGraphX(rect)+m_DeltaX;
 		int y=aGraphPoint.GetGraphY(rect)+m_DeltaY;		
@@ -364,9 +364,9 @@ void CCIEChartGrapher::DrawAlphaBitmap(CDC *pDC, const CCIEGraphPoint& aGraphPoi
 			
 			if (GetConfig()->m_GammaOffsetType == 5 && GetConfig()->m_bHDR100 && !isSat && !isPrimeSat)
 			{
-				aColor2.SetX(aColor2.GetX()*105.95640);
-				aColor2.SetY(aColor2.GetY()*105.95640);
-				aColor2.SetZ(aColor2.GetZ()*105.95640);
+				aColor2.SetX(aColor2.GetX()*GetHDRRefLevel());
+				aColor2.SetY(aColor2.GetY()*GetHDRRefLevel());
+				aColor2.SetZ(aColor2.GetZ()*GetHDRRefLevel());
 			}
 							
 
@@ -374,8 +374,8 @@ void CCIEChartGrapher::DrawAlphaBitmap(CDC *pDC, const CCIEGraphPoint& aGraphPoi
 
 			if (GetConfig()->m_GammaOffsetType == 5 && (GetConfig()->m_colorStandard == UHDTV3 || GetConfig()->m_colorStandard == UHDTV4 || isSat) ) //check for primaries/secondaries page
 			{
-				RefWhite = 94.37844 / tmWhite;
-				YWhite = YWhite * 94.37844 / tmWhite ;
+				RefWhite = GetHDRRefWhite() / tmWhite;
+				YWhite = YWhite * GetHDRRefWhite() / tmWhite ;
 			}
 
 			if (GetConfig()->m_dE_form == 6) //dICtCp
@@ -527,7 +527,7 @@ void CCIEChartGrapher::DrawChart(CDataSetDoc * pDoc, CDC* pDC, CRect rect, CPPTo
 	int current_mode = ((CMainView*)pView)->m_displayMode;
 	BOOL onEdit =  ((CMainView*)pView)->m_editCheckButton.GetCheck();
 	CColor NoDataColor;
-	double tmWhite = getL_EOTF(0.5022283, NoDataColor, NoDataColor, GetConfig()->m_GammaRel, GetConfig()->m_Split, 5, GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * 100.0;
+	double tmWhite = getL_EOTF(GetHDRRefWhiteCode(), NoDataColor, NoDataColor, GetConfig()->m_GammaRel, GetConfig()->m_Split, 5, GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) * 100.0;
 	CColorReference  bRef = ((GetColorReference().m_standard == UHDTV3 || GetColorReference().m_standard == UHDTV4)?CColorReference(UHDTV2):(GetColorReference().m_standard == HDTVa || GetColorReference().m_standard == HDTVb)?CColorReference(HDTV):GetColorReference());
 
 	if (pTooltip)
@@ -856,9 +856,9 @@ void CCIEChartGrapher::DrawChart(CDataSetDoc * pDoc, CDC* pDC, CRect rect, CPPTo
 		{
 			for (int i=0; i<6; i++)
 			{
-				aColor[i].SetX(aColor[i].GetX()/105.95640);
-				aColor[i].SetY(aColor[i].GetY()/105.95640);
-				aColor[i].SetZ(aColor[i].GetZ()/105.95640);
+				aColor[i].SetX(aColor[i].GetX()/GetHDRRefLevel());
+				aColor[i].SetY(aColor[i].GetY()/GetHDRRefLevel());
+				aColor[i].SetZ(aColor[i].GetZ()/GetHDRRefLevel());
 			}
 		}
 	}
@@ -926,7 +926,7 @@ void CCIEChartGrapher::DrawChart(CDataSetDoc * pDoc, CDC* pDC, CRect rect, CPPTo
 	isSat = FALSE;
 
 	if (GetConfig()->m_GammaOffsetType == 5 && (GetConfig()->m_colorStandard == UHDTV3 || GetConfig()->m_colorStandard == UHDTV4))
-		YWhiteRef = 1.0 / 105.9564 * tmWhite / 94.37844;
+		YWhiteRef = 1.0 / GetHDRRefLevel() * tmWhite / GetHDRRefWhite();
 
 	if (GetConfig()->m_GammaOffsetType == 5)
 		YWhiteRef = YWhiteRef / tmWhite * YWhite;
@@ -1635,7 +1635,7 @@ void CCIEChartGrapher::DrawChart(CDataSetDoc * pDoc, CDC* pDC, CRect rect, CPPTo
 	YWhiteRef = 1.0;
 
 	if (GetConfig()->m_GammaOffsetType == 5)	
-		YWhiteRef = 1. / 105.9564 * tmWhite / 94.37844;
+		YWhiteRef = 1. / GetHDRRefLevel() * tmWhite / GetHDRRefWhite();
 
 	if(m_doShowSaturationScaleTarg) 
 	{
@@ -1924,7 +1924,7 @@ void CCIEChartGrapher::DrawChart(CDataSetDoc * pDoc, CDC* pDC, CRect rect, CPPTo
 
 	if (GetConfig()->m_GammaOffsetType == 5 && !(GetConfig()->m_colorStandard == UHDTV3 || GetConfig()->m_colorStandard == UHDTV4))
 	{
-		YWhiteRef = 1. / 105.9564 * tmWhite / 94.37844;
+		YWhiteRef = 1. / GetHDRRefLevel() * tmWhite / GetHDRRefWhite();
 		YWhite = YWhite;
 	}
 

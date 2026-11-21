@@ -749,6 +749,17 @@ extern bool GenerateCC24Colors (const CColorReference& colorReference, ColorRGBD
 extern Matrix ComputeConversionMatrix(const ColorXYZ measures[3], const ColorXYZ references[3], const ColorXYZ & WhiteTest, const ColorXYZ & WhiteRef, bool	bUseOnlyPrimaries);
 double ArrayIndexToGrayLevel ( int nCol, int nSize, bool m_bUseRoundDown, bool m_b10bit = FALSE );
 double GrayLevelToGrayProp ( double Level, bool m_bUseRoundDown, bool m_b10bit = FALSE );
+// Reference white of the HDR colour patterns (ColorChecker, primaries/secondaries, saturations):
+// the luminance a 100 % SDR white is placed at in PQ. 94.37844 cd/m2 (8-bit level 126) is the
+// historical HCFR value; BT.2408 uses 203 cd/m2.
+#define HDR_REF_WHITE_DEFAULT 94.37844
+void SetHDRRefWhite ( double nits );
+double GetHDRRefWhite ();					// cd/m2
+double GetHDRRefLevel ();					// 10000 / reference white
+double GetHDRRefWhiteCode ();				// PQ signal (0..1) of the reference white
+double GetHDRPatternCode ( double linear );	// PQ signal for a linear value relative to the reference white
+bool IsHDRRefWhiteDefault ();
+bool IsHDRRefWhiteDefault ( double nits );
 double getL_EOTF ( double x, CColor White, CColor Black, double g_rel, double split, int mode, double m_DiffuseL = 94.37844, double m_MasterMinL = 0.0, double m_MasterMaxL = 4000.0, double m_TargetMinL = 0.00, double m_TargetMaxL = 700.0, bool ToneMap = FALSE, bool cBT2390 = FALSE, double m_TargetSysGamma = 1.2, double b_fact = 1.0, double E2_fact = 0.0, double E2_fact1 = 1.1 );
 
 #endif // !defined(COLOR_H_INCLUDED_)
