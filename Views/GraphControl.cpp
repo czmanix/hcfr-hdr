@@ -96,6 +96,7 @@ CGraphControl::CGraphControl()
 	m_doShowAxis=TRUE;
 	m_doShowXLabel=TRUE;
 	m_doShowYLabel=TRUE;
+	m_bLogYAxis=FALSE;
 	m_doShowAllPoints=FALSE;
 	m_doShowAllToolTips=TRUE;
 	m_doShowDataLabel = FALSE;
@@ -463,6 +464,33 @@ void CGraphControl::FitYScale(BOOL doRound, double roundStep, bool isGamma)
 	double	minY=9999999.99;
 	double	maxY=-9999999.99;
 
+	if (m_bLogYAxis)
+	{
+		const double floorY = -4.0;	// 0.0001 cd/m2, below what colorimeters resolve
+		for(int j=0;j<m_graphArray.GetSize();j++)
+			for(int i=0; i<m_graphArray[j].m_pointArray.GetSize(); i++)
+			{
+				double x = m_graphArray[j].m_pointArray[i].x;
+				double y = max(m_graphArray[j].m_pointArray[i].y, floorY);
+				if (x >= m_minX && x <= m_maxX)
+				{
+					minY = min(minY, y);
+					maxY = max(maxY, y);
+				}
+			}
+		if (maxY < minY)
+		{
+			minY = -1.0;
+			maxY = 3.0;
+		}
+		minY = max(floorY, floor((minY - 0.05) * 2.0) / 2.0);
+		maxY = ceil((maxY + 0.05) * 2.0) / 2.0;
+		m_minYGrow = min(m_minYGrow, minY);
+		m_maxYGrow = max(m_maxYGrow, maxY);
+		SetScale(m_minX,m_maxX,minY,maxY);
+		return;
+	}
+
 	for(int j=0;j<m_graphArray.GetSize();j++)
 		for(int i=0; i<m_graphArray[j].m_pointArray.GetSize(); i++)
 		{
@@ -527,6 +555,8 @@ int CGraphControl::GetGraphY(double y,CRect rect)
 
 CPoint CGraphControl::GetGraphPoint(CDecimalPoint aPoint,CRect rect)
 {
+	if (m_bLogYAxis && aPoint.y < m_minY)
+		return CPoint(GetGraphX(aPoint.x,rect),GetGraphY(m_minY,rect));
 	return CPoint(GetGraphX(aPoint.x,rect),GetGraphY(aPoint.y,rect));
 }
 
@@ -747,10 +777,15 @@ void CGraphControl::DrawGraphs(CDC *pDC, CRect rect)
 			if(m_doShowAllToolTips && m_graphArray[j].m_doShowToolTips)
 			{
 				CString str,str2;
-				str.Format("%.2f %s: %.3f ", m_graphArray[j].m_pointArray[i].x, ( m_pXUnitStr ? m_pXUnitStr : (GetConfig()->m_PercentGray) ), m_graphArray[j].m_pointArray[i].y);
-				//add absolute luminance for luminance plots
-				if(m_pYUnitStr)
-					str+=m_pYUnitStr;
+				if (m_bLogYAxis)
+					str.Format("%.2f %s: %.4g cd/m^2 ", m_graphArray[j].m_pointArray[i].x, ( m_pXUnitStr ? m_pXUnitStr : (GetConfig()->m_PercentGray) ), pow(10.0, m_graphArray[j].m_pointArray[i].y));
+				else
+				{
+					str.Format("%.2f %s: %.3f ", m_graphArray[j].m_pointArray[i].x, ( m_pXUnitStr ? m_pXUnitStr : (GetConfig()->m_PercentGray) ), m_graphArray[j].m_pointArray[i].y);
+					//add absolute luminance for luminance plots
+					if(m_pYUnitStr)
+						str+=m_pYUnitStr;
+				}
 
 				if (m_graphArray[j].m_pointArray[i].Y > 0.0)
 				{
@@ -781,6 +816,8 @@ void CGraphControl::DrawGraphs(CDC *pDC, CRect rect)
 					CFont* pOldFont = pDC->SelectObject(&font);
 					char outStr[10];
 					double y = m_graphArray[j].m_pointArray[i].y;
+					if (m_bLogYAxis)
+						y = pow(10.0, y);
 					if (y < 100)
 						sprintf_s(outStr,"%0.2f",y);
 					else
@@ -849,6 +886,13 @@ void CGraphControl::DrawAxis(CDC *pDC, CRect rect, BOOL bWhiteBkgnd)
 
 	// Draw Y axis
 	pDC->SetTextColor(bWhiteBkgnd?RGB(64,64,64):RGB(192,192,192));
+	if (m_bLogYAxis)
+	{
+		DrawLogYAxis(pDC, rect, bWhiteBkgnd);
+		pDC->SelectObject(pOldPen);
+		pDC->SelectObject(pOldFont);
+		return;
+	}
 	double yVal=m_minY;
 	double lastStrEndY=GetGraphY(yVal,rect);
 	for(int i=0;i<(m_maxY-m_minY)/m_yAxisStep;i++)
@@ -876,6 +920,64 @@ void CGraphControl::DrawAxis(CDC *pDC, CRect rect, BOOL bWhiteBkgnd)
 
 	pDC->SelectObject(pOldPen);
 	pDC->SelectObject(pOldFont);
+}
+
+// Y axis for log10(cd/m2) values: a line and a label (0.01, 0.1, 1, 10 ... cd/m2) at every
+// decade, dotted lines at 2x and 5x when a decade is tall enough
+void CGraphControl::DrawLogYAxis(CDC *pDC, CRect rect, BOOL bWhiteBkgnd)
+{
+	if (m_maxY <= m_minY)
+		return;
+
+	double pixPerDecade = (double)rect.Height() * m_yScale;
+	CPen minorPen(PS_DOT,1,bWhiteBkgnd?RGB(176,176,176):RGB(0,48,48));
+	int textHeight = pDC->GetTextExtent("0").cy;
+	int lastLabelTop = rect.bottom - textHeight;	// keeps labels off the X axis labels and each other
+
+	int firstDecade = (int)floor(m_minY);
+	int lastDecade = (int)ceil(m_maxY);
+	int topLabelDecade = (int)floor(m_maxY + 1e-9);
+	while (topLabelDecade > firstDecade && GetGraphY(topLabelDecade,rect) - textHeight < rect.top)
+		topLabelDecade--;
+
+	for (int k = firstDecade; k <= lastDecade; k++)
+	{
+		if (m_doShowAxis && pixPerDecade >= 40)
+		{
+			static const double minors[] = { 2.0, 5.0 };
+			CPen *pPrev = pDC->SelectObject(&minorPen);
+			for (int m = 0; m < 2; m++)
+			{
+				double v = k + log10(minors[m]);
+				if (v > m_minY && v < m_maxY)
+				{
+					int y = GetGraphY(v,rect);
+					pDC->MoveTo(0,y);
+					pDC->LineTo(rect.right,y);
+				}
+			}
+			pDC->SelectObject(pPrev);
+		}
+
+		if (k < m_minY - 1e-9 || k > m_maxY + 1e-9)
+			continue;
+
+		int y = GetGraphY(k,rect);
+		if (m_doShowAxis)
+		{
+			pDC->MoveTo(0,y);
+			pDC->LineTo(rect.right,y);
+		}
+		if (m_doShowYLabel && y < lastLabelTop && y - textHeight >= rect.top)
+		{
+			CString str;
+			str.Format("%g", pow(10.0, k));
+			if (k == topLabelDecade)
+				str += " cd/m\xB2";
+			pDC->TextOut(2,y,str);
+			lastLabelTop = y - textHeight;
+		}
+	}
 }
 
 void CGraphControl::OnPaint() 

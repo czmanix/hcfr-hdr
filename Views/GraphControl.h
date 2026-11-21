@@ -86,6 +86,7 @@ public:
 	BOOL m_doShowXLabel;
 	BOOL m_doShowYLabel;
 	BOOL m_doShowDataLabel;
+	BOOL m_bLogYAxis;	// y values are log10(cd/m2): decade grid, labels and tooltips in cd/m2
 
 	CArray<CGraph,CGraph> m_graphArray;
 	double m_xScale;
@@ -137,6 +138,7 @@ public:
 	void SetYScale(double minY, double maxY) { SetScale(m_minX,m_maxX,minY,maxY); }
 	void SetXAxisProps(LPSTR pUnitStr, double axisStep, double minGrow, double maxGrow);
 	void SetYAxisProps(LPSTR pUnitStr, double axisStep, double minGrow, double maxGrow);
+	void DrawLogYAxis(CDC *pDC, CRect rect, BOOL bWhiteBkgnd);
 	void ShiftXScale(double deltaX);
 	void ShiftYScale(double deltaY);
 	void GrowXScale(double deltaMinX, double deltaMaxX);
