@@ -278,46 +278,46 @@ void CMeasure::Serialize(CArchive& ar)
 		ar << m_bOverRideBlack; //new in 11
 		m_userBlack.Serialize(ar);
 
-		ar << m_grayMeasureArray.GetSize();
+		ar << (int) m_grayMeasureArray.GetSize();
 		for(int i=0;i<m_grayMeasureArray.GetSize();i++)
 			m_grayMeasureArray[i].Serialize(ar);
 
 		// Version 3: near black and near white added
-		ar << m_nearBlackMeasureArray.GetSize();
+		ar << (int) m_nearBlackMeasureArray.GetSize();
 		for(int i=0;i<m_nearBlackMeasureArray.GetSize();i++)
 			m_nearBlackMeasureArray[i].Serialize(ar);
 
-		ar << m_nearWhiteMeasureArray.GetSize();
+		ar << (int) m_nearWhiteMeasureArray.GetSize();
 		for(int i=0;i<m_nearWhiteMeasureArray.GetSize();i++)
 			m_nearWhiteMeasureArray[i].Serialize(ar);
 
 		// Version 2: color saturation added
-		ar << m_redSatMeasureArray.GetSize();
+		ar << (int) m_redSatMeasureArray.GetSize();
 		for(int i=0;i<m_redSatMeasureArray.GetSize();i++)
 			m_redSatMeasureArray[i].Serialize(ar);
 
-		ar << m_greenSatMeasureArray.GetSize();
+		ar << (int) m_greenSatMeasureArray.GetSize();
 		for(int i=0;i<m_greenSatMeasureArray.GetSize();i++)
 			m_greenSatMeasureArray[i].Serialize(ar);
 
-		ar << m_blueSatMeasureArray.GetSize();
+		ar << (int) m_blueSatMeasureArray.GetSize();
 		for(int i=0;i<m_blueSatMeasureArray.GetSize();i++)
 			m_blueSatMeasureArray[i].Serialize(ar);
 
-		ar << m_yellowSatMeasureArray.GetSize();
+		ar << (int) m_yellowSatMeasureArray.GetSize();
 		for(int i=0;i<m_yellowSatMeasureArray.GetSize();i++)
 			m_yellowSatMeasureArray[i].Serialize(ar);
 
-		ar << m_cyanSatMeasureArray.GetSize();
+		ar << (int) m_cyanSatMeasureArray.GetSize();
 		for(int i=0;i<m_cyanSatMeasureArray.GetSize();i++)
 			m_cyanSatMeasureArray[i].Serialize(ar);
 
-		ar << m_magentaSatMeasureArray.GetSize();
+		ar << (int) m_magentaSatMeasureArray.GetSize();
 		for(int i=0;i<m_magentaSatMeasureArray.GetSize();i++)
 			m_magentaSatMeasureArray[i].Serialize(ar);
 
 		//write end marker to limit storage size to real data limits version 13
-		ar << m_cc24SatMeasureArray.GetSize();
+		ar << (int) m_cc24SatMeasureArray.GetSize();
 		for(int i=0;i<m_cc24SatMeasureArray.GetSize();i++)
 		{
 			if (m_cc24SatMeasureArray[i].isValid())
@@ -328,7 +328,7 @@ void CMeasure::Serialize(CArchive& ar)
 		}
 		MarkerColor.Serialize(ar);
 
-		ar << m_cc24SatMeasureArray_master.GetSize();
+		ar << (int) m_cc24SatMeasureArray_master.GetSize();
 		for(int i=0;i<m_cc24SatMeasureArray_master.GetSize();i++)
 		{
 			if (m_cc24SatMeasureArray_master[i].isValid())
@@ -340,7 +340,7 @@ void CMeasure::Serialize(CArchive& ar)
 		MarkerColor.Serialize(ar);
 
 		// Version 1 again
-		ar << m_measurementsArray.GetSize();
+		ar << (int) m_measurementsArray.GetSize();
 		for(int i=0;i<m_measurementsArray.GetSize();i++)
 			m_measurementsArray[i].Serialize(ar);
 

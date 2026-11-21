@@ -209,7 +209,7 @@ public:
 protected:
 	//{{AFX_MSG(CFullScreenWindow)
 	void OnPaint ();
-	void OnTimer (UINT nIDEvent);
+	void OnTimer (UINT_PTR nIDEvent);
 	afx_msg BOOL OnSetCursor( CWnd* pWnd, UINT nHitTest, UINT message );
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()

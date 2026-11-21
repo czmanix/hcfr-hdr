@@ -1135,7 +1135,7 @@ void CCustomTabCtrl::OnMouseMove(UINT nFlags, CPoint point)
 	}
 }
 
-LONG CCustomTabCtrl::OnMouseLeave(WPARAM /*wParam*/, LPARAM /*lParam*/) 
+LRESULT CCustomTabCtrl::OnMouseLeave(WPARAM /*wParam*/, LPARAM /*lParam*/) 
 {
 	if(m_nFirstState || m_nPrevState || m_nCloseState)
 	{
@@ -1167,7 +1167,7 @@ void CCustomTabCtrl::OnUpdateEdit()
 	}
 }
 
-LONG CCustomTabCtrl::OnThemeChanged(WPARAM /*wParam*/, LPARAM /*lParam*/) 
+LRESULT CCustomTabCtrl::OnThemeChanged(WPARAM /*wParam*/, LPARAM /*lParam*/) 
 {
 	::DeleteObject(m_hBmpBkLeftSpin);
 	m_hBmpBkLeftSpin = NULL;
@@ -1406,7 +1406,7 @@ LONG CCustomTabCtrl::OnThemeChanged(WPARAM /*wParam*/, LPARAM /*lParam*/)
 	return 0;
 }
 
-void CCustomTabCtrl::OnTimer(UINT nIDEvent) 
+void CCustomTabCtrl::OnTimer(UINT_PTR nIDEvent) 
 {
 	CWnd::OnTimer(nIDEvent);
 	if(nIDEvent==1)

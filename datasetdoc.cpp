@@ -684,7 +684,7 @@ void CDataSetDoc::UpdateFrameCounts()
 	ASSERT(iFrame == nFrames + 1);
 }
 
-void CDataSetDoc::CreateSensor(int aID)
+void CDataSetDoc::CreateSensor(INT_PTR aID)
 {
 	CString	Msg, Title;
 

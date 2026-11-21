@@ -71,6 +71,8 @@
 #define MFT_CENTER      0x0040
 
 // Typedefinition for compatibility to MFC 7.0
+// (only for pre-VS.NET compilers; the SDK defines these, as 64-bit types on x64)
+#if defined(_MSC_VER) && _MSC_VER < 1300
 #ifndef DWORD_PTR
 typedef DWORD DWORD_PTR, *PDWORD_PTR;
 #endif
@@ -81,6 +83,7 @@ typedef unsigned long ULONG_PTR, *PULONG_PTR;
 
 #ifndef LONG_PTR
 typedef long LONG_PTR, *PLONG_PTR;
+#endif
 #endif
 
 // Additional flagdefinition for highlighting

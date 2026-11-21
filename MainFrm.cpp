@@ -1126,7 +1126,7 @@ void CMainFrame::OnRefreshLux()
 	m_wndLuminanceWnd.Refresh ( szBuf );
 }
 
-int __stdcall MyDialogProc(HWND hwndDlg,UINT uMsg,WPARAM wParam,LPARAM lParam)
+INT_PTR CALLBACK MyDialogProc(HWND hwndDlg,UINT uMsg,WPARAM wParam,LPARAM lParam)
 {
 	return FALSE;
 }

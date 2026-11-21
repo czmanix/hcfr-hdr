@@ -64,8 +64,10 @@ HCFRCalibrationData readCalibrationFile (const char* filePath)
   calibrationFile.seekg(4, ios::cur);
 
   // la date du profile
-  calibrationFile.read((char*)&(result.calibrationDate), 4);
-  result.calibrationDate = littleEndianTime_TToHost(result.calibrationDate);
+  // stored as 32 bits in the file; time_t is 64-bit on x64
+  unsigned int calibrationDate32 = 0;
+  calibrationFile.read((char*)&calibrationDate32, 4);
+  result.calibrationDate = (time_t) littleEndianUIntToHost(calibrationDate32);
 
   // version de la classe cOneSensorDevice
   calibrationFile.read((char*)&(result.oneDeviceSensorClassVersion), 4);

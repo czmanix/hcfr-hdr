@@ -167,7 +167,7 @@ public:
 	void OnBkgndMeasureReady();
 
 protected:
-	void CreateSensor(int aID);
+	void CreateSensor(INT_PTR aID);	// for Argyll meters aID is an ArgyllMeterWrapper*
 	void CreateGenerator(int aID);
 	void DuplicateSensor(CDataSetDoc * pDoc);
 	void DuplicateGenerator(CDataSetDoc * pDoc);

@@ -351,5 +351,7 @@ CColor CSpyder3Sensor::MeasureColorInternal(const ColorRGBDisplay& aRGBValue)
 }
 
 #ifdef USE_NON_FREE_CODE
+#ifndef _WIN64	// 32-bit only closed-source DLL (x64 uses stubs from the header)
 #pragma comment(lib, "devlib\\CHCFRDI4.lib")
+#endif
 #endif

@@ -64,8 +64,8 @@ public:
 public:
 	virtual ~CTestColorWnd();
 
-	afx_msg LONG OnCloseUp(UINT lParam, LONG wParam);
-	afx_msg LONG OnDropDown(UINT lParam, LONG wParam);
+	afx_msg LRESULT OnCloseUp(WPARAM lParam, LPARAM wParam);
+	afx_msg LRESULT OnDropDown(WPARAM lParam, LPARAM wParam);
 
 	// Generated message map functions
 protected:

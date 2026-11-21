@@ -346,7 +346,7 @@ CColor CSimulatedSensor::MeasureColorInternal(const ColorRGBDisplay& aRGBValue, 
 
 void CSimulatedSensor::GetUniqueIdentifier( CString & strId ) 
 {
-	sprintf ( strId.GetBuffer(64), "%s-%08X", (LPCSTR) m_name, (DWORD) this );
+	sprintf ( strId.GetBuffer(64), "%s-%p", (LPCSTR) m_name, (void *) this );
 	strId.ReleaseBuffer (); 
 }
 

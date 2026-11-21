@@ -77,7 +77,9 @@ void CSensor::Serialize(CArchive& archive)
 	{
 		int version=1;
 		archive << version;
-		archive << m_calibrationTime;
+		// Stored as 32 bits, as the 32-bit build (_USE_32BIT_TIME_T) always did:
+		// time_t is 64-bit on x64 and must not change the .chc file format
+		archive << (LONG) m_calibrationTime;
 	}
 	else
 	{
@@ -85,7 +87,9 @@ void CSensor::Serialize(CArchive& archive)
 		archive >> version;
 		if ( version > 1 )
 			AfxThrowArchiveException ( CArchiveException::badSchema );
-		archive >> m_calibrationTime;
+		LONG calibrationTime32;
+		archive >> calibrationTime32;
+		m_calibrationTime = (time_t) calibrationTime32;
 	}
 }
 

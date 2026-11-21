@@ -207,13 +207,13 @@ protected:
 	afx_msg void				OnRButtonDown(UINT nFlags, CPoint point);
 	afx_msg void				OnLButtonUp(UINT nFlags, CPoint point);
 	afx_msg void				OnRButtonUp(UINT nFlags, CPoint point);
-	afx_msg LONG				OnMouseLeave(WPARAM wParam, LPARAM lParam);
-	afx_msg LONG				OnThemeChanged(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT				OnMouseLeave(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT				OnThemeChanged(WPARAM wParam, LPARAM lParam);
 	afx_msg void				OnMouseMove(UINT nFlags, CPoint point);
 	afx_msg void				OnPaint();
 	afx_msg void				OnSize(UINT nType, int cx, int cy);
 	afx_msg void				OnLButtonDblClk(UINT nFlags, CPoint point);
-	afx_msg void				OnTimer(UINT nIDEvent);
+	afx_msg void				OnTimer(UINT_PTR nIDEvent);
 	afx_msg void				OnUpdateEdit();
 	afx_msg void				OnRButtonDblClk(UINT nFlags, CPoint point);
 	//}}AFX_MSG

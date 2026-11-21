@@ -464,7 +464,7 @@ void CNewIconBarItem::DrawBarItem(HWND hWndOwner, HDC hDC)
 	      hMDIClient = GetMDIClient(hWndOwner);
       if(hMDIClient)
       {
-        HICON hIcon = (HICON)GetClassLong( hMDIClient,GCL_HICONSM);
+        HICON hIcon = (HICON)GetClassLongPtr( hMDIClient,GCLP_HICONSM);
         if(hIcon)
         {
           DrawState(hDC,NULL,NULL,(LPARAM)hIcon,NULL,rect.left-2,rect.top-2,20,20,DST_ICON);
@@ -2247,7 +2247,7 @@ BOOL CNewMenuBar::TranslateFrameMessage(MSG* pMsg)
   return FALSE; // pass along...
 }
 
-void CNewMenuBar::OnTimer(UINT nIDEvent)
+void CNewMenuBar::OnTimer(UINT_PTR nIDEvent)
 {
   if(nIDEvent!=m_TimerID)
   {

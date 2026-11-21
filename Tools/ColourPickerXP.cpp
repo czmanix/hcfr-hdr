@@ -587,7 +587,7 @@ END_MESSAGE_MAP()
 // Method:	CColourPickerXP::OnSelEndOK()
 // Notes:	None.
 //***********************************************************************
-LONG CColourPickerXP::OnSelEndOK(UINT lParam, LONG /*wParam*/)
+LRESULT CColourPickerXP::OnSelEndOK(WPARAM lParam, LPARAM /*wParam*/)
 {
 	m_bPopupActive = FALSE;
 
@@ -614,7 +614,7 @@ LONG CColourPickerXP::OnSelEndOK(UINT lParam, LONG /*wParam*/)
 // Method:	CColourPickerXP::OnSelEndCancel()
 // Notes:	None.
 //***********************************************************************
-LONG CColourPickerXP::OnSelEndCancel(UINT lParam, LONG /*wParam*/)
+LRESULT CColourPickerXP::OnSelEndCancel(WPARAM lParam, LPARAM /*wParam*/)
 {
 	m_bPopupActive = FALSE;
 	
@@ -636,7 +636,7 @@ LONG CColourPickerXP::OnSelEndCancel(UINT lParam, LONG /*wParam*/)
 // Method:	CColourPickerXP::OnSelChange()
 // Notes:	None.
 //***********************************************************************
-LONG CColourPickerXP::OnSelChange(UINT lParam, LONG /*wParam*/)
+LRESULT CColourPickerXP::OnSelChange(WPARAM lParam, LPARAM /*wParam*/)
 {
     if (m_bTrackSelection) 
 		Color = (COLORREF)lParam;

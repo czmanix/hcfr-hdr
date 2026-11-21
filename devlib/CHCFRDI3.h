@@ -28,6 +28,22 @@
 #define DI3_USERMEMOFFSET_BLACK_G_OFFSET	3
 #define DI3_USERMEMOFFSET_BLACK_B_OFFSET	4
 
+#if defined(_WIN64) && !defined(CHCFRDI3_EXPORTS)
+// 64-bit build: this closed-source device DLL exists only as a 32-bit binary,
+// so the native driver reports "DLL not available" (use the Argyll driver instead)
+static inline int InitDevice3() { return DI3ERR_NODLL; }
+static inline BOOL ReleaseDevice3() { return FALSE; }
+static inline BOOL GetValuesDevice3(UINT, UINT, UINT, UINT, DWORD *, DWORD *, DWORD *, DWORD *, UINT *) { return FALSE; }
+static inline void DisconnectDevice3() { }
+static inline BOOL GetDevice3Matrix(short *) { return FALSE; }
+static inline BOOL SetDevice3Matrix(const short *) { return FALSE; }
+static inline BOOL GetDevice3BlackLevel(short *) { return FALSE; }
+static inline BOOL SetDevice3BlackLevel(const short *) { return FALSE; }
+static inline BOOL GetDevice3AmpLevel(short *) { return FALSE; }
+static inline BOOL SetDevice3AmpLevel(const short *) { return FALSE; }
+static inline BOOL ReadDevice3UserMemory(short *, int, int) { return FALSE; }
+static inline BOOL WriteDevice3UserMemory(const short *, int, int) { return FALSE; }
+#else
 CHCFRDI3_API int InitDevice3();
 CHCFRDI3_API BOOL ReleaseDevice3();
 CHCFRDI3_API BOOL GetValuesDevice3(UINT nMeasureMode, UINT nAmpMode, UINT nShift, UINT nMilliseconds, DWORD * pAmpFactor, DWORD * pR, DWORD * pG, DWORD * pB, UINT * pNbTicks);
@@ -40,6 +56,7 @@ CHCFRDI3_API BOOL GetDevice3AmpLevel(short * pAmpLevel);
 CHCFRDI3_API BOOL SetDevice3AmpLevel(const short * pAmpLevel);
 CHCFRDI3_API BOOL ReadDevice3UserMemory(short * pData, int nOffset, int NbValues);
 CHCFRDI3_API BOOL WriteDevice3UserMemory(const short * pData, int nOffset, int NbValues);
+#endif
 
 #ifdef __cplusplus
 	} // extern "C"

@@ -183,14 +183,14 @@ bool CxImageBMP::Decode(CxFile * hFile)
 									BYTE *sline = iter.GetRow(scanline);
 									for (int i = 0; i < status_byte; i++) {
 										if (low_nibble) {
-											if ((DWORD)(sline+bits) < (DWORD)(info.pImage+head.biSizeImage)){
+											if ((sline+bits) < (info.pImage+head.biSizeImage)){
 												*(sline + bits) |=  (second_byte & 0x0F);
 											}
 											if (i != status_byte - 1)
 												hFile->Read(&second_byte, sizeof(BYTE), 1);
 											bits++;
 										} else {
-											if ((DWORD)(sline+bits) < (DWORD)(info.pImage+head.biSizeImage)){
+											if ((sline+bits) < (info.pImage+head.biSizeImage)){
 												*(sline + bits) = (BYTE)(second_byte & 0xF0);
 											}
 										}
@@ -207,12 +207,12 @@ bool CxImageBMP::Decode(CxFile * hFile)
 							hFile->Read(&second_byte, sizeof(BYTE), 1);
 							for (unsigned i = 0; i < status_byte; i++) {
 								if (low_nibble) {
-									if ((DWORD)(sline+bits) < (DWORD)(info.pImage+head.biSizeImage)){
+									if ((sline+bits) < (info.pImage+head.biSizeImage)){
 										*(sline + bits) |= (second_byte & 0x0F);
 									}
 									bits++;
 								} else {
-									if ((DWORD)(sline+bits) < (DWORD)(info.pImage+head.biSizeImage)){
+									if ((sline+bits) < (info.pImage+head.biSizeImage)){
 										*(sline + bits) = (BYTE)(second_byte & 0xF0);
 									}
 								}				

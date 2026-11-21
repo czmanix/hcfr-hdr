@@ -36,9 +36,9 @@ public:
 	CSensorSelectionPropPage();
 	~CSensorSelectionPropPage();
 
-	static LPCSTR GetThcFileSubDir ( int nSensorID );
+	static LPCSTR GetThcFileSubDir ( INT_PTR nSensorID );
 
-	int m_currentID;
+	INT_PTR m_currentID;	// for Argyll meters: ArgyllMeterWrapper*
 
 // Dialog Data
 	//{{AFX_DATA(CSensorSelectionPropPage)
@@ -50,7 +50,7 @@ public:
 	int		m_sensorTrainingMode;
 	//}}AFX_DATA
 
-	int GetCurrentID() { return m_currentID; }
+	INT_PTR GetCurrentID() { return m_currentID; }
 	LPCSTR	GetFileSubDir () { return GetThcFileSubDir ( m_currentID ); }
 
 	virtual UINT GetHelpId ( LPSTR lpszTopic );
@@ -75,7 +75,7 @@ protected:
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 private:
-    void AddSensor(LPCTSTR name, int id);
+    void AddSensor(LPCTSTR name, INT_PTR id);
 
 };
 

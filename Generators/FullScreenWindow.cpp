@@ -1962,7 +1962,7 @@ void video_scale (CxImage *inImage)
 	} //if pattern
 }
 
-void CFullScreenWindow::OnTimer(UINT nIDEvent) 
+void CFullScreenWindow::OnTimer(UINT_PTR nIDEvent) 
 {					
 	BOOL			bOk = TRUE;
 	RECT			rect;

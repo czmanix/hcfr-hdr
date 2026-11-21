@@ -19,9 +19,17 @@
 #define DI1ERR_SPYDER		3
 #define DI1ERR_UNKNOWN		4
 
+#if defined(_WIN64) && !defined(CHCFRDI1_EXPORTS)
+// 64-bit build: this closed-source device DLL exists only as a 32-bit binary,
+// so the native driver reports "DLL not available" (use the Argyll driver instead)
+static inline int InitDevice1(UINT) { return DI1ERR_NODLL; }
+static inline BOOL ReleaseDevice1() { return FALSE; }
+static inline BOOL GetValuesDevice1(UINT, double *, double *, double *) { return FALSE; }
+#else
 CHCFRDI1_API int InitDevice1(UINT nCalibrationMode);
 CHCFRDI1_API BOOL ReleaseDevice1();
 CHCFRDI1_API BOOL GetValuesDevice1(UINT nReadTime, double * pX, double * pY, double * pZ);
+#endif
 
 #ifdef __cplusplus
 	} // extern "C"

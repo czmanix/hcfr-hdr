@@ -294,7 +294,7 @@ void CDataSetFrameInfo::Serialize(CArchive& ar)
 		ar << m_FramePlacement.ptMaxPosition;
 		ar << m_FramePlacement.rcNormalPosition;
 		ar << m_nActiveView;
-		ar << m_ViewInfoList.GetCount ();
+		ar << (int) m_ViewInfoList.GetCount ();
 
 		pos = m_ViewInfoList.GetHeadPosition ();
 		while ( pos )
@@ -393,7 +393,7 @@ void CDataSetWindowPositions::Serialize(CArchive& ar)
 		int	version = 1;
 		ar << version;
 		ar << m_nActiveFrame;
-		ar << m_FrameInfoList.GetCount ();
+		ar << (int) m_FrameInfoList.GetCount ();
 
 		pos = m_FrameInfoList.GetHeadPosition ();
 		while ( pos )

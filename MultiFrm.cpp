@@ -1925,7 +1925,7 @@ LRESULT CMultiFrame::OnDDERequest(WPARAM wParam, LPARAM lParam)
 
 			GlobalUnlock ( hMem );
 
-			lParam = PackDDElParam ( WM_DDE_DATA, (UINT) hMem, nAtomData );
+			lParam = PackDDElParam ( WM_DDE_DATA, (UINT_PTR) hMem, nAtomData );
 			::PostMessage ( hWndClient, WM_DDE_DATA, (WPARAM) m_hWnd, lParam );
 		}
 		else
@@ -1968,7 +1968,10 @@ LRESULT CMultiFrame::OnDDEPoke(WPARAM wParam, LPARAM lParam)
 	CStringList	CmdParams;
 	CColor		ReceivedColor=noDataColor;
 
-	UnpackDDElParam ( WM_DDE_POKE, lParam, (unsigned int *) & hMem, (unsigned int *) & nAtom );
+	UINT_PTR	uiDataLo = 0, uiDataHi = 0;
+	UnpackDDElParam ( WM_DDE_POKE, lParam, & uiDataLo, & uiDataHi );
+	hMem = (HGLOBAL) uiDataLo;
+	nAtom = (ATOM) uiDataHi;
 	FreeDDElParam ( WM_DDE_POKE, lParam );
 
 	lpDDEPoke = (DDEPOKE *) GlobalLock ( hMem ); 

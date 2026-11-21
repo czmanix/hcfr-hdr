@@ -969,9 +969,9 @@ void CColorHCFRConfig::DisplayHelp ( UINT nId, LPCSTR lpszTopic )
 	BOOL	bDisplayed = FALSE;
 	
 	if ( lpszTopic )
-		bDisplayed = ( HtmlHelp ( GetDesktopWindow (), m_chmFileName, HH_DISPLAY_TOPIC, (DWORD)(LPSTR) lpszTopic ) != NULL );
+		bDisplayed = ( HtmlHelp ( GetDesktopWindow (), m_chmFileName, HH_DISPLAY_TOPIC, (DWORD_PTR) lpszTopic ) != NULL );
 	else if ( nId )
-		bDisplayed = ( HtmlHelp ( GetDesktopWindow (), m_chmFileName, HH_HELP_CONTEXT, (DWORD) nId ) != NULL );
+		bDisplayed = ( HtmlHelp ( GetDesktopWindow (), m_chmFileName, HH_HELP_CONTEXT, (DWORD_PTR) nId ) != NULL );
 	
 	if ( ! bDisplayed )
 		HtmlHelp ( GetDesktopWindow (), m_chmFileName, HH_DISPLAY_TOC, 0 );

@@ -162,7 +162,7 @@ int CTestColorWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	return 0;
 }
 
-LONG CTestColorWnd::OnCloseUp(UINT lParam, LONG wParam) 
+LRESULT CTestColorWnd::OnCloseUp(WPARAM lParam, LPARAM wParam) 
 {
 	CColourPopupXP::m_nNumColours=40;
 	CColourPopupXP::m_nFxNumColumns=8;
@@ -178,7 +178,7 @@ LONG CTestColorWnd::OnCloseUp(UINT lParam, LONG wParam)
 	return 0;
 }
 
-LONG CTestColorWnd::OnDropDown(UINT lParam, LONG wParam) 
+LRESULT CTestColorWnd::OnDropDown(WPARAM lParam, LPARAM wParam) 
 {
 	Invalidate(TRUE); // Needed otherwise it's crapped
 	return 0;

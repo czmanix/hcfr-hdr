@@ -141,7 +141,7 @@ void CSensorSelectionPropPage::DoDataExchange(CDataExchange* pDX)
         }
         for(size_t i(0); i < argyllMeters.size(); ++i)
         {
-            AddSensor(argyllMeters[i]->getMeterName().c_str(), (int)argyllMeters[i]);
+            AddSensor(argyllMeters[i]->getMeterName().c_str(), (INT_PTR)argyllMeters[i]);
         }
         AddSensor(_T("Simulated sensor"), 1);
 #ifdef USE_NON_FREE_CODE //all should run under ArgyllCMS license
@@ -191,7 +191,7 @@ void CSensorSelectionPropPage::OnOK()
 	OnWizardFinish();
 }
 
-void CSensorSelectionPropPage::AddSensor(LPCTSTR name, int id)
+void CSensorSelectionPropPage::AddSensor(LPCTSTR name, INT_PTR id)
 {
     int index = m_sensorChoiceCtrl.AddString(name);
     m_sensorChoiceCtrl.SetItemData(index, id);
@@ -238,7 +238,7 @@ UINT CSensorSelectionPropPage::GetHelpId ( LPSTR lpszTopic )
 	return HID_SELECT_SENSOR;
 }
 
-LPCSTR CSensorSelectionPropPage::GetThcFileSubDir ( int nSensorID ) 
+LPCSTR CSensorSelectionPropPage::GetThcFileSubDir ( INT_PTR nSensorID ) 
 {
 	switch ( nSensorID ) 
 	{ 

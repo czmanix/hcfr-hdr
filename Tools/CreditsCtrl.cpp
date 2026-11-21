@@ -247,7 +247,7 @@ void CCreditsCtrl::SetDefaultLinkCursor()
 	}
 }
 
-void CCreditsCtrl::OnTimer(UINT nIDEvent) 
+void CCreditsCtrl::OnTimer(UINT_PTR nIDEvent) 
 {
 	if(nIDEvent == CCREDITCTRL_TIMER1)
 	{
@@ -1114,7 +1114,7 @@ void CCreditsCtrl::OnLButtonDown(UINT nFlags, CPoint point)
 			int i = s.Find('#',1);
 			CString arg = i==-1?"":s.Mid(1,i-1);
 			s = s.Mid(i==-1?1:i+1);
-			void(*func)(LPCTSTR) = (void(*)(LPCTSTR))atol(s);
+			void(*func)(LPCTSTR) = (void(*)(LPCTSTR))(INT_PTR)_atoi64(s);
 			if(func)
 				(*func)(i==-1?NULL:(LPCTSTR)arg);
 		} else

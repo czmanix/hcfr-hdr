@@ -400,5 +400,7 @@ CColor CMTCSSensor::MeasureBlackLevel(BOOL bUseOffsets)
 }
 
 #ifdef USE_NON_FREE_CODE
+#ifndef _WIN64	// 32-bit only closed-source DLL (x64 uses stubs from the header)
 #pragma comment(lib, "devlib\\CHCFRDI3.lib")
+#endif
 #endif

@@ -6033,7 +6033,7 @@ LRESULT CMainView::OnCtlColorStatic(WPARAM wParam, LPARAM lParam)
 		SetBkMode(hDC, TRANSPARENT);
 		SetTextColor(hDC, t_color); //set to reference
 		CCompClr=CreateSolidBrush(RGB(floor(pow(m_meas_r1,1.0)*255.+0.5),floor(pow(m_meas_g1,1.0)*255.+0.5),floor(pow(m_meas_b1,1.0)*255.+0.5)));
-		return BOOL(CCompClr);
+		return (LRESULT) CCompClr;
 	}
 	else if (::GetDlgCtrlID(hWnd) == IDC_CCOMP3 && m_SelectedColor.isValid()) //reference color
 	{
@@ -6041,7 +6041,7 @@ LRESULT CMainView::OnCtlColorStatic(WPARAM wParam, LPARAM lParam)
 		SetBkMode(hDC, TRANSPARENT);
 		SetTextColor(hDC, t_color); //set to reference
 		CCompClr = CreateSolidBrush(RGB(floor(pow(m_ref_r1,1.0)*255.+0.5),floor(pow(m_ref_g1,1.0)*255.+0.5),floor(pow(m_ref_b1,1.0)*255.+0.5)));
-		return BOOL(CCompClr);
+		return (LRESULT) CCompClr;
 	}
 
 	return DefWindowProc(WM_CTLCOLORSTATIC, wParam, lParam);

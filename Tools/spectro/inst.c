@@ -56,6 +56,7 @@
 #include "inst.h"
 #include "rspec.h"
 #include "insttypeinst.h"
+#include "spydX2.h"		/* HCFR: new_spydX2() was implicitly declared as returning int */
 #include "ccmx.h"
 #include "ccss.h"
 #include "sort.h"
