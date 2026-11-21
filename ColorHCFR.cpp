@@ -337,6 +337,11 @@ BOOL CColorHCFRApp::InitInstance()
 	CCommandLineInfo cmdInfo;
 	ParseCommandLine(cmdInfo);
 
+	// Destroy splash screen before opening a file from the command line: the splash is
+	// topmost and would hide any message box shown while loading (e.g. "Preferences in
+	// saved file differ from active preferences"), leaving the user with an invisible dialog
+	SplashWnd.DestroyWindow ();
+
 	if(cmdInfo.m_nShellCommand != CCommandLineInfo::FileNew)
 		// Dispatch commands specified on the command line
 		if (!ProcessShellCommand(cmdInfo))			// disabled to avoid default doc creation
@@ -344,9 +349,6 @@ BOOL CColorHCFRApp::InitInstance()
 
 	EnableShellOpen ();
 	RegisterShellFileTypes ();
-
-	// Destroy splash screen before displaying main window
-	SplashWnd.DestroyWindow ();
 
 	// The main window has been initialized, so show and update it.
 	if(GetConfig()->m_doSavePosition)
