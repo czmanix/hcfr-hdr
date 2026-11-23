@@ -18,32 +18,47 @@
 ;  This is an InnoSetup script.
 ;  For more information about InnoSetup see http://www.innosetup.com
 
-#define MyAppVersion GetStringFileInfo("..\Release\ColorHCFR.exe","FileVersion")
+#ifndef Platform
+  #define Platform "x64"
+#endif
+#if Platform == "x64"
+  #define BinDir "..\x64\Release"
+  #define OutBase "HCFRSetup-x64"
+#else
+  #define BinDir "..\Release"
+  #define OutBase "HCFRSetup-Win32"
+#endif
+
+#define MyAppVersion GetStringFileInfo(BinDir + "\ColorHCFR.exe","FileVersion")
 
 [Setup]
 AppName=HCFR Calibration
-AppVerName=HCFR {#MyAppVersion}
-AppUpdatesURL=http://hcfr.sourceforge.net/
+AppVerName=HCFR {#MyAppVersion} ({#Platform})
+AppUpdatesURL=https://github.com/czmanix/hcfr-hdr
 AppVersion={#MyAppVersion}
+#if Platform == "x64"
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
+#endif
 DefaultDirName={commonpf}\HCFR Calibration
 DefaultGroupName=HCFR Calibration
-OutputBaseFilename=HCFRSetup
+OutputBaseFilename={#OutBase}
 AllowNoIcons=yes
 LicenseFile=gpl.rtf
 AppMutex=HCFR
 ExtraDiskSpaceRequired=73400320
 AppPublisher=Open Source Publishing
-AppPublisherURL=http://www.avsforum.com/forum/139-display-calibration/1393853-hcfr-open-source-projector-display-calibration-software.html
-AppSupportURL=http://www.avsforum.com/forum/139-display-calibration/1393853-hcfr-open-source-projector-display-calibration-software.html
+AppPublisherURL=https://github.com/czmanix/hcfr-hdr
+AppSupportURL=https://github.com/czmanix/hcfr-hdr
 ;required for installing the driver on NT platforms
 PrivilegesRequired=Admin
 DisableStartupPrompt=yes
-AppCopyright=Copyright (C) 2013-2021 HCFR Team
-VersionInfoDescription=HCFR Setup
+AppCopyright=Copyright (C) 2013-2026 HCFR Team
+VersionInfoDescription=HCFR Setup ({#Platform})
 VersionInfoProductVersion={#MyAppVersion}
 VersionInfoVersion={#MyAppVersion}
 SetupIconFile=..\res\ColorHCFR.ico
-OutputDir=..\Release
+OutputDir={#BinDir}
 DisableDirPage=no
 
 
@@ -66,17 +81,20 @@ Name: "{app}\Etalon_Argyll"; Permissions: everyone-modify
 Name: "main"; Description: "Main Files"; Types: full; Flags: fixed
 
 [Tasks]
-Name: "desktopicon"; Description: "Create a &desktop icon"; GroupDescription: "Additional icons:"; MinVersion: 4,4
-Name: "quicklaunchicon"; Description: "Create a &Quick Launch icon"; GroupDescription: "Additional icons:"; MinVersion: 4,4; Flags: unchecked
+Name: "desktopicon"; Description: "Create a &desktop icon"; GroupDescription: "Additional icons:"
 
 [Files]
 ; main
-Source: "..\Release\ColorHCFR.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: main
-Source: "..\Release\oeminst.exe"; DestDir: "{app}\Tools"; Flags: ignoreversion; Components: main
-Source: "..\Release\spotread.exe"; DestDir: "{app}\Tools"; Flags: ignoreversion; Components: main
-Source: "..\Install\dispwin.exe"; DestDir: "{app}\Tools"; Flags: ignoreversion; Components: main; 
+Source: "{#BinDir}\ColorHCFR.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: main
+Source: "{#BinDir}\oeminst.exe"; DestDir: "{app}\Tools"; Flags: ignoreversion; Components: main
+Source: "{#BinDir}\spotread.exe"; DestDir: "{app}\Tools"; Flags: ignoreversion; Components: main
+Source: "..\Install\dispwin.exe"; DestDir: "{app}\Tools"; Flags: ignoreversion; Components: main
 Source: "..\Install\msvcr100.dll"; DestDir: "{app}\Tools"; Flags: ignoreversion; Components: main
-Source: "..\Release\*.dll"; DestDir: "{app}"; Flags: ignoreversion; Components: main
+Source: "{#BinDir}\CHCFR21_*.dll"; DestDir: "{app}"; Flags: ignoreversion; Components: main
+#if Platform != "x64"
+Source: "..\devlib\CHCFRDI*.dll"; DestDir: "{app}"; Flags: ignoreversion; Components: main
+Source: "..\Tools\pi\RB8PGenerator.dll"; DestDir: "{app}"; Flags: ignoreversion; Components: main
+#endif
 Source: "Help\*.chm"; DestDir: "{app}"; Flags: ignoreversion; Components: main
 Source: "..\Install\Etalon_HCFR\*.thc"; DestDir: "{app}\Etalon_HCFR"; Flags: ignoreversion; Components: main
 Source: "..\Install\Profils_IR\*.ihc"; DestDir: "{app}\Profils_IR"; Flags: ignoreversion; Components: main
@@ -91,16 +109,14 @@ Source: "..\Tools\spectro\usb\bin\x86\*.sys"; DestDir: "{app}\Drivers\bin\x86"; 
 Source: "..\Tools\spectro\usb\bin\amd64\*.sys"; DestDir: "{app}\Drivers\bin\amd64"; Flags: ignoreversion; Components: main
 Source: "..\Tools\spectro\usb\bin\ia64\*.sys"; DestDir: "{app}\Drivers\bin\ia64"; Flags: ignoreversion; Components: main
 Source: "..\Tools\spectro\usb\bin\*.txt"; DestDir: "{app}\Drivers\bin"; Flags: ignoreversion; Components: main
-Source: "..\Tools\pi\RB8PGenerator.dll"; DestDir: "{app}"; Flags: ignoreversion; Components: main
 
 [INI]
-Filename: "{app}\HCFR.url"; Section: "InternetShortcut"; Key: "URL"; String: "http://hcfr.sourceforge.net/"
+Filename: "{app}\HCFR.url"; Section: "InternetShortcut"; Key: "URL"; String: "https://github.com/czmanix/hcfr-hdr"
 
 [Icons]
 Name: "{group}\HCFR"; Filename: "{app}\ColorHCFR.exe"
-Name: "{group}\HCFR on the Web"; Filename: "{app}\HCFR.url"
-Name: "{userdesktop}\HCFR"; Filename: "{app}\ColorHCFR.exe"; MinVersion: 4,4; Tasks: desktopicon
-Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\HCFR"; Filename: "{app}\ColorHCFR.exe"; MinVersion: 4,4; Tasks: quicklaunchicon
+Name: "{group}\HCFR on GitHub"; Filename: "{app}\HCFR.url"
+Name: "{userdesktop}\HCFR"; Filename: "{app}\ColorHCFR.exe"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\ColorHCFR.exe"; Description: "Launch HCFR"; Flags: nowait postinstall skipifsilent
