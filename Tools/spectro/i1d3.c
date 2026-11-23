@@ -75,7 +75,9 @@
 #define I1D3_MEAS_TIMEOUT 40.0      /* Longest reading timeout in seconds */ 
 									/* Typically 20.0 is the maximum needed. */
 
-#define I1D3_SAT_FREQ 100000.0		/* L2F sensor frequency limit ? Should this be increased ?? */
+#define I1D3_SAT_FREQ 250000.0		/* L2F sensor frequency limit (as in ArgyllCMS 3.x). */
+									/* (Assuming it is actual/4, max 1MHz, ~16000 cd/m^2.) */
+									/* 100 kHz cut readings off at ~2500 cd/m^2. */
 
 static inst_code i1d3_interp_code(inst *pp, int ec);
 static inst_code i1d3_check_unlock(i1d3 *p);
@@ -1618,8 +1620,10 @@ i1d3_take_emis_measurement(
 		a1logd(p->log,3,"Got %f %f %f raw, %f %f %f Hz\n",rmeas[0],rmeas[1],rmeas[2],rgb[0],rgb[1],rgb[2]);
 
 		for (i = 0; i < 3; i++) {
-			if (rgb[i] > I1D3_SAT_FREQ)
+			if (rgb[i] > I1D3_SAT_FREQ) {
+				p->th_en = isth;
 				return i1d3_interp_code((inst *)p, I1D3_TOOBRIGHT);
+			}
 		}
 	}
 
