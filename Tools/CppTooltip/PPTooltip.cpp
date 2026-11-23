@@ -87,9 +87,9 @@ CPPToolTip::CPPToolTip()
 {
 	// Default values
 	m_dwTimeAutoPop = 50000;
-	m_dwTimeInitial = 500;
-	m_dwTimeFadeIn = 100;
-	m_dwTimeFadeOut = 200;
+	m_dwTimeInitial = 300;
+	m_dwTimeFadeIn = 0;
+	m_dwTimeFadeOut = 0;
 	m_dwBehaviour = PPTOOLTIP_CLOSE_LEAVEWND | PPTOOLTIP_NOCLOSE_OVER;	 //The tooltip's behaviour
 	m_dwEffectBk = 0;
 	m_dwDirection = 0;
@@ -97,8 +97,8 @@ CPPToolTip::CPPToolTip()
 	m_nGranularity = 0;
 	m_nTransparency = 0;
 	m_bDelayNextTool = FALSE;
-	m_dwShowEffect = SHOWEFFECT_FADEINOUT;
-	m_dwHideEffect = SHOWEFFECT_FADEINOUT;
+	m_dwShowEffect = SHOWEFFECT_NONE;
+	m_dwHideEffect = SHOWEFFECT_NONE;
 
 	m_nTooltipState = PPTOOLTIP_STATE_HIDEN;
 	m_nTooltipType = PPTOOLTIP_NORMAL;
@@ -116,19 +116,20 @@ CPPToolTip::CPPToolTip()
 	m_hbrBorder = NULL;
 	m_hrgnTooltip = NULL;
 
-	SetColorBk(::GetSysColor(COLOR_INFOBK));
-	SetBorder(::GetSysColor(COLOR_INFOTEXT));
+	SetColorBk(RGB(250, 250, 250));
+	SetEffectBk(CPPDrawManager::EFFECT_SOLID);
+	SetBorder(RGB(160, 160, 160), 1, 1);
 	EnableHyperlink();
 	SetNotify(FALSE);
 	SetDefaultSizes();
 	SetDirection();
 	SetBehaviour();
 	SetDebugMode(FALSE);
-	SetDelayTime(PPTOOLTIP_TIME_INITIAL, 500);
+	SetDelayTime(PPTOOLTIP_TIME_INITIAL, 300);
 	SetDelayTime(PPTOOLTIP_TIME_AUTOPOP, 50000);
-	SetDelayTime(PPTOOLTIP_TIME_FADEIN, 100);
-	SetDelayTime(PPTOOLTIP_TIME_FADEOUT, 200);
-	SetTooltipShadow(6, 6);
+	SetDelayTime(PPTOOLTIP_TIME_FADEIN, 0);
+	SetDelayTime(PPTOOLTIP_TIME_FADEOUT, 0);
+	SetTooltipShadow(0, 0);
 
 #ifdef PPTOOLTIP_USE_MENU
 	MenuToolPosition();
@@ -140,7 +141,7 @@ CPPToolTip::CPPToolTip()
 	if(!(::GetClassInfo(hInst, PPTOOLTIP_CLASSNAME, &wndcls)))
 	{
 		// otherwise we need to register a new class
-		wndcls.style			= CS_SAVEBITS;
+		wndcls.style			= CS_SAVEBITS | CS_DROPSHADOW;
 		wndcls.lpfnWndProc		= ::DefWindowProc;
 		wndcls.cbClsExtra		= wndcls.cbWndExtra = 0;
 		wndcls.hInstance		= hInst;
@@ -373,6 +374,24 @@ void CPPToolTip::OnRedrawTooltip(HDC hDC, BYTE nTransparency /* = 0 */)
 	//RUS: Отображаем контур тултипа
 	if ((NULL != m_hbrBorder) && (m_szBorder.cx) && (m_szBorder.cy))
 		OnDrawBorder(hMemDC, m_hrgnTooltip);
+
+	// Fast path: opaque tooltip without software shadow - blit directly without screen capture
+	if (0 == nTransparency && 0 == m_szOffsetShadow.cx && 0 == m_szOffsetShadow.cy)
+	{
+		::BitBlt(hDC, m_rcBoundsTooltip.left, m_rcBoundsTooltip.top,
+			rect.Width(), rect.Height(), hMemDC, 0, 0, SRCCOPY);
+		::SelectObject(hBkDC, hOldBkBitmap);
+		::SelectObject(hMemDC, hOldBitmap);
+		::SelectObject(hTempDC, hOldTempBitmap);
+		::DeleteObject(hBitmap);
+		::DeleteObject(hTempBitmap);
+		::DeleteDC(hBkDC);
+		::DeleteDC(hMemDC);
+		::DeleteDC(hTempDC);
+		if (bAutoReleaseDC)
+			::ReleaseDC(this->GetSafeHwnd(), hDC);
+		return;
+	}
 
 	if (NULL == m_hUnderTooltipBk)
 	{

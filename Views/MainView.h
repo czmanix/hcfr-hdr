@@ -199,6 +199,7 @@ public:
 	void	SetUserInfo ( DWORD dwUserInfo );
 	virtual BOOL PreTranslateMessage( MSG* pMsg);
 	void InitGrid(bool sizeGrid=false);
+	void ResizeGrid();
 	void UpdateGrid();
 
 protected:

@@ -111,7 +111,7 @@ class CPPToolTip : public CWnd
 //	friend BOOL CALLBACK EnumChildWinF(HWND hwnd, LPARAM lParam);
 // Construction
 public:
-	BOOL Create(CWnd* pParentWnd, BOOL bBalloon = TRUE);
+	BOOL Create(CWnd* pParentWnd, BOOL bBalloon = FALSE);
 
 	CPPToolTip();
 	virtual ~CPPToolTip();

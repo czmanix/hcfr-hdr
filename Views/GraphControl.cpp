@@ -327,6 +327,7 @@ void CGraphControl::ChangeScale()
 
 BEGIN_MESSAGE_MAP(CGraphControl, CWnd)
 	//{{AFX_MSG_MAP(CGraphControl)
+	ON_WM_ERASEBKGND()
 	ON_WM_PAINT()
 	ON_WM_SIZE()
 	ON_WM_CREATE()
@@ -992,6 +993,11 @@ void CGraphControl::DrawLogYAxis(CDC *pDC, CRect rect, BOOL bWhiteBkgnd)
 	}
 }
 
+BOOL CGraphControl::OnEraseBkgnd(CDC* pDC)
+{
+	return TRUE;
+}
+
 void CGraphControl::OnPaint() 
 {
 	CPaintDC dc(this); // device context for painting
@@ -1401,9 +1407,9 @@ int CGraphControl::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	m_tooltip.Create(this);	
 	m_tooltip.SetBehaviour(PPTOOLTIP_MULTIPLE_SHOW);
 	m_tooltip.SetNotify(TRUE);
-	m_tooltip.SetColorBk(RGB(255,165,0),RGB(0,128,128));
-	m_tooltip.SetEffectBk(CPPDrawManager::EFFECT_HGRADIENT);
-	m_tooltip.SetBorder(::CreateSolidBrush(RGB(212,175,55)),1,1);
+	m_tooltip.SetColorBk(RGB(250,250,250));
+	m_tooltip.SetEffectBk(CPPDrawManager::EFFECT_SOLID);
+	m_tooltip.SetBorder(RGB(160,160,160),1,1);
 	
 	return 0;
 }

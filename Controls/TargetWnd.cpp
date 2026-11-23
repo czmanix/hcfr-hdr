@@ -1116,10 +1116,9 @@ BOOL CTargetWnd::Create(LPCTSTR lpszClassName, LPCTSTR lpszWindowName, DWORD dwS
 	m_tooltip.AddTool(this, "Tooltip for rectangle area");
 	m_tooltip.SetBehaviour(PPTOOLTIP_MULTIPLE_SHOW);
 	m_tooltip.SetNotify(TRUE);
-	m_tooltip.SetColorBk(RGB(255,165,0),RGB(0,128,128));
-	m_tooltip.SetEffectBk(CPPDrawManager::EFFECT_HGRADIENT);
-	m_tooltip.SetBorder(::CreateSolidBrush(RGB(212,175,55)),1,1);
-	m_tooltip.SetTransparency(250);
+	m_tooltip.SetColorBk(RGB(250,250,250));
+	m_tooltip.SetEffectBk(CPPDrawManager::EFFECT_SOLID);
+	m_tooltip.SetBorder(RGB(160,160,160),1,1);
 
 	return TRUE;
 }

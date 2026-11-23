@@ -68,6 +68,7 @@ class CCIEChartGrapher
 
 	CBitmap m_bgBitmap;
 	CBitmap m_drawBitmap;
+	CSize m_bgSize;
 	CBitmap m_gamutBitmap;
 	CBitmap m_refRedPrimaryBitmap;
 	CBitmap m_refGreenPrimaryBitmap;
@@ -152,6 +153,8 @@ protected:
 	double	m_refDeltaE;
 
 	CPPToolTip m_tooltip;
+	CRect m_pendingRefRect;
+	BOOL m_bResizePending;
 
 	CPoint	m_CurMousePoint;
 
@@ -189,6 +192,7 @@ protected:
 	//{{AFX_MSG(CCIEChartView)
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 	afx_msg void OnSize(UINT nType, int cx, int cy);
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
 	afx_msg void OnUpdateCieShowbackground(CCmdUI* pCmdUI);
 	afx_msg void OnUpdateCieShowDeltaE(CCmdUI* pCmdUI);

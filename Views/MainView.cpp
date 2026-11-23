@@ -5853,16 +5853,16 @@ void CMainView::InitButtons()
 	m_tooltip.Create(this);	
 	m_tooltip.SetBehaviour(PPTOOLTIP_CLOSE_LEAVEWND);
 	m_tooltip.SetNotify(TRUE);
-	m_tooltip.SetBorder(::CreateSolidBrush(RGB(212,175,55)),1,1);
+	m_tooltip.SetBorder(RGB(160,160,160),1,1);
 	GetDlgItem( IDC_INFOLINE )->SetWindowTextA(m_infoLine);
 
 	CWnd * pWnd = GetDlgItem(IDC_INFOLINE);
 	pWnd = GetDlgItem(IDC_CCOMP3);
 
 	m_tooltip.AddTool(pWnd, m_infoLine);
-	m_tooltip.SetColorBk(RGB(255,165,0),RGB(0,128,128));
-	m_tooltip.SetEffectBk(CPPDrawManager::EFFECT_HGRADIENT);
-	m_tooltip.SetBorder(::CreateSolidBrush(RGB(212,175,55)),1,1);
+	m_tooltip.SetColorBk(RGB(250,250,250));
+	m_tooltip.SetEffectBk(CPPDrawManager::EFFECT_SOLID);
+	m_tooltip.SetBorder(RGB(160,160,160),1,1);
 
 	m_tooltip2.Create(this);	
 	m_tooltip2.SetBehaviour(PPTOOLTIP_CLOSE_LEAVEWND);
@@ -5871,7 +5871,7 @@ void CMainView::InitButtons()
 	m_tooltip2.AddTool(pWnd, "Color Comparator\n____________________________________________\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
 	m_tooltip2.SetColorBk(RGB(110,110,110),RGB(128,128,128));
 	m_tooltip2.SetEffectBk(CPPDrawManager::EFFECT_SOLID);
-	m_tooltip2.SetBorder(::CreateSolidBrush(RGB(212,175,55)),1,1);
+	m_tooltip2.SetBorder(RGB(160,160,160),1,1);
 	m_tooltip.SetFont(&line_Font);
 	m_tooltip2.SetFont(&line_Font);
 }
@@ -6158,9 +6158,50 @@ void CMainView::OnSize(UINT nType, int cx, int cy)
 				m_Target.ShowWindow ( SW_SHOW );
 		}
 		
-		InitGrid(true);
-		UpdateGrid();
+		ResizeGrid();
 	}
+}
+
+void CMainView::ResizeGrid()
+{
+	if (m_pGrayScaleGrid == NULL)
+		return;
+
+	int nCols = m_pGrayScaleGrid->GetColumnCount();
+	int nRows = m_pGrayScaleGrid->GetRowCount();
+	if (nCols <= 1 || nRows <= 1)
+		return;
+
+	m_pGrayScaleGrid->SetRedraw(FALSE);
+
+	m_pGrayScaleGrid->AutoSizeColumns();
+	m_pGrayScaleGrid->ExpandColumnsToFit(FALSE);
+	int width = m_pGrayScaleGrid->GetColumnWidth(1);
+	if (width < 80)
+		width = 80;
+	if (nCols - 1 < 4 && width > 100)
+		width = 100;
+	if (width == 80 || width == 100)
+	{
+		for (int i = 1; i < nCols; i++)
+			m_pGrayScaleGrid->SetColumnWidth(i, width);
+	}
+
+	m_pGrayScaleGrid->AutoSizeRows();
+	m_pGrayScaleGrid->ExpandRowsToFit(FALSE);
+	int height = m_pGrayScaleGrid->GetRowHeight(1);
+	if (height > 40)
+		height = 40;
+	if (height < 25)
+		height = 25;
+	if (height == 40 || height == 25)
+	{
+		for (int i = 1; i < nRows; i++)
+			m_pGrayScaleGrid->SetRowHeight(i, height);
+	}
+
+	m_pGrayScaleGrid->SetRedraw(TRUE);
+	m_pGrayScaleGrid->Invalidate(FALSE);
 }
 
 /////////////////////////////////////////////////////////////////////////////

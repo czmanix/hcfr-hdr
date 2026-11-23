@@ -106,6 +106,7 @@ CPoint CCIEGraphPoint::GetGraphPoint(CRect rect) const
 
 CCIEChartGrapher::CCIEChartGrapher()
 {
+	m_bgSize = CSize(0, 0);
 	m_refRedPrimaryBitmap.LoadBitmap(IDB_REFREDPRIMARY_BITMAP);
 	m_refGreenPrimaryBitmap.LoadBitmap(IDB_REFGREENPRIMARY_BITMAP);
 	m_refBluePrimaryBitmap.LoadBitmap(IDB_REFBLUEPRIMARY_BITMAP);
@@ -179,6 +180,7 @@ void CCIEChartGrapher::MakeBgBitmap(CRect rect, BOOL bWhiteBkgnd)	// Create back
     if(m_bgBitmap.m_hObject)
         m_bgBitmap.DeleteObject();
     m_bgBitmap.CreateCompatibleBitmap(&ScreenDC,rect.Width(),rect.Height());
+    m_bgSize = rect.Size();
 
     if(m_gamutBitmap.m_hObject)
         m_gamutBitmap.DeleteObject();
@@ -2386,6 +2388,7 @@ CCIEChartView::CCIEChartView()
 	: CSavingView()
 {
 	m_bDelayedUpdate = FALSE;
+	m_bResizePending = FALSE;
 }
 
 CCIEChartView::~CCIEChartView()
@@ -2396,6 +2399,7 @@ BEGIN_MESSAGE_MAP(CCIEChartView, CSavingView)
 	//{{AFX_MSG_MAP(CCIEChartView)
 	ON_WM_ERASEBKGND()
 	ON_WM_SIZE()
+	ON_WM_TIMER()
 	ON_WM_CONTEXTMENU()
 	ON_UPDATE_COMMAND_UI(IDM_CIE_SHOWBACKGROUND, OnUpdateCieShowbackground)
 	ON_UPDATE_COMMAND_UI(IDM_CIE_SHOWDELTAE, OnUpdateCieShowDeltaE)
@@ -2460,7 +2464,7 @@ void CCIEChartView::OnInitialUpdate()
 	m_tooltip.Create(this);	
 	m_tooltip.SetBehaviour(PPTOOLTIP_MULTIPLE_SHOW);
 	m_tooltip.SetNotify(TRUE);
-	m_tooltip.SetBorder(::CreateSolidBrush(RGB(212,175,55)),1,1);
+	m_tooltip.SetBorder(RGB(160,160,160),1,1);
 }
 
 void CCIEChartView::OnUpdate(CView* pSender, LPARAM lHint, CObject* pHint) 
@@ -2545,8 +2549,17 @@ void CCIEChartView::OnDraw(CDC* pDC)
 	CDC dcDraw;
 	dcDraw.CreateCompatibleDC(pDC);
 	CBitmap *pOldBitmap=dcDraw.SelectObject(&m_Grapher.m_drawBitmap);
-	m_Grapher.DrawChart ( GetDocument (), & dcDraw, refrect, & m_tooltip, this );
-	pDC->BitBlt(0,0,rect.Width(),rect.Height(),&dcDraw,-m_Grapher.m_DeltaX,-m_Grapher.m_DeltaY,SRCCOPY);
+	if ( m_bResizePending && m_Grapher.m_bgSize.cx > 0 && m_Grapher.m_bgSize.cy > 0 )
+	{
+		int oldMode = pDC->SetStretchBltMode(COLORONCOLOR);
+		pDC->StretchBlt(0, 0, rect.Width(), rect.Height(), &dcDraw, 0, 0, m_Grapher.m_bgSize.cx, m_Grapher.m_bgSize.cy, SRCCOPY);
+		pDC->SetStretchBltMode(oldMode);
+	}
+	else
+	{
+		m_Grapher.DrawChart ( GetDocument (), & dcDraw, refrect, & m_tooltip, this );
+		pDC->BitBlt(0,0,rect.Width(),rect.Height(),&dcDraw,-m_Grapher.m_DeltaX,-m_Grapher.m_DeltaY,SRCCOPY);
+	}
 	dcDraw.SelectObject(pOldBitmap);
 }
 
@@ -2642,9 +2655,35 @@ void CCIEChartView::OnSize(UINT nType, int cx, int cy)
 		else
 			RefRect = ClientRect;
 
-		m_Grapher.MakeBgBitmap(RefRect,GetConfig()->m_bWhiteBkgndOnScreen);
+		if ( m_Grapher.m_bgSize.cx == 0 || m_Grapher.m_bgSize.cy == 0 )
+		{
+			m_bResizePending = FALSE;
+			m_Grapher.MakeBgBitmap(RefRect,GetConfig()->m_bWhiteBkgndOnScreen);
+		}
+		else if ( m_Grapher.m_bgSize != RefRect.Size() )
+		{
+			m_pendingRefRect = RefRect;
+			m_bResizePending = TRUE;
+			SetTimer(1001, 50, NULL);
+		}
 	}
 	Invalidate(FALSE);
+}
+
+void CCIEChartView::OnTimer(UINT_PTR nIDEvent)
+{
+	if ( nIDEvent == 1001 )
+	{
+		KillTimer(1001);
+		m_bResizePending = FALSE;
+		if ( m_pendingRefRect.Width() > 0 && m_pendingRefRect.Height() > 0 )
+		{
+			m_Grapher.MakeBgBitmap(m_pendingRefRect, GetConfig()->m_bWhiteBkgndOnScreen);
+			Invalidate(FALSE);
+		}
+		return;
+	}
+	CSavingView::OnTimer(nIDEvent);
 }
 
 void CCIEChartView::OnContextMenu(CWnd* pWnd, CPoint point) 
