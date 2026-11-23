@@ -1510,26 +1510,18 @@ void video_scale (CxImage *inImage)
 				}
 		} else
 		{
-			//resize but maintain aspect ratio
-			if (m_bResizePict && !(destW == iW && destH == iH))
+			// Scale to fill the display while preserving aspect ratio
+			if (m_bResizePict && iW > 0 && iH > 0)
 			{
-				//switch for dealing with sending to CC
-				if (iW == 1920 || iW == 4200)
-					isScaled = TRUE;
-				if (destA < iA) //scale width
-				{
-					newImage->Resample2(destW,(long)((float)destW/(float)iW * (float)iH), CxImage::IM_BICUBIC2, CxImage::OM_REPEAT, newImage);
-				}
-				else if (destA > iA) //scale height
-				{
-					newImage->Resample2((long)((float)destH/(float)iH * (float)iW), destH,CxImage::IM_BICUBIC2, CxImage::OM_REPEAT, newImage);
-				}
-//				else if (iW != destW || iH != destH)
-//					newImage->Resample2(destW, destH, CxImage::IM_BICUBIC2, CxImage::OM_REPEAT, newImage);
-			}
-
-			if (m_bResizePict && !isScaled) {
-				SetRect ( &aRect, 0, 0, rect.Width(), rect.Height());
+				int fitW = destW;
+				int fitH = destH;
+				if (destA < iA)
+					fitH = (int)floor((double)destW * iH / iW + 0.5);
+				else if (destA > iA)
+					fitW = (int)floor((double)destH * iW / iH + 0.5);
+				int offX = (destW - fitW) / 2;
+				int offY = (destH - fitH) / 2;
+				SetRect ( &aRect, offX, offY, offX + fitW, offY + fitH );
 			} else {
 				int startX, startY, sizeW, sizeH;
 				int dispX, dispY, dispW, dispH;
@@ -1562,7 +1554,10 @@ void video_scale (CxImage *inImage)
 				}
 			}
 		}
+		int oldStretchMode = dc.SetStretchBltMode(HALFTONE);
+		SetBrushOrgEx(dc, 0, 0, NULL);
 		newImage->Draw(dc,aRect);
+		dc.SetStretchBltMode(oldStretchMode);
 		delete newImage;
 	} else
 	{

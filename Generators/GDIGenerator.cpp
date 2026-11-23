@@ -131,8 +131,24 @@ CGDIGenerator::CGDIGenerator(int nDisplayMode, BOOL b16_235)
 	m_displayWindow.m_bdispTrip=FALSE;
 	m_displayWindow.m_bLinear=FALSE;
 	m_displayWindow.m_bHdr10=FALSE;
+	m_rectSizePercent = 100;
+	m_bgStimPercent = 0;
+	m_offsetx = 0;
+	m_offsety = 0;
+	m_Intensity = 100;
+	m_patternDGenerator = NULL;
 	m_HdrInterface=NULL;
 	m_nPat = 0;
+	m_busePic = FALSE;
+	m_bLinear = FALSE;
+	m_bHdr10 = FALSE;
+	m_bdispTrip = FALSE;
+	m_brPi_user = FALSE;
+	m_madVR_3d = FALSE;
+	m_madVR_vLUT = FALSE;
+	m_madVR_HDR = FALSE;
+	m_madVR_OSD = FALSE;
+	m_bisInited = FALSE;
 
 	GetMonitorList();
 	m_activeMonitorNum = m_monitorNb-1;
@@ -151,7 +167,6 @@ CGDIGenerator::CGDIGenerator(int nDisplayMode, BOOL b16_235)
 	str.LoadString(IDS_GDIGENERATOR_NAME);
 	SetName(str);
 	m_bConnect = FALSE;
-	Init();
 }
 
 CGDIGenerator::~CGDIGenerator()
