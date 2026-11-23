@@ -72,7 +72,8 @@ CReferencesPropPage::CReferencesPropPage() : CPropertyPageWithHelp(CReferencesPr
 	m_TargetMaxLUser = m_TargetMaxL;
 	m_DiffuseL = 94.37844;
 	m_DiffuseLUser = m_DiffuseL;
-	m_HDRRefWhite = 94.37844;
+	m_HDRRefWhite = HDR_REF_WHITE_DEFAULT;
+	m_bUpdatingHDRRefWhite = FALSE;
     //}}AFX_DATA_INIT
 
 	m_isModified=FALSE;
@@ -103,6 +104,7 @@ void CReferencesPropPage::DoDataExchange(CDataExchange* pDX)
   	DDX_Text(pDX, IDC_EDIT_DIFFUSE_WHITE, m_DiffuseL);
   	DDX_Control(pDX, IDC_EDIT_DIFFUSE_WHITE, m_DiffuseLCtrl);
 	DDV_MinMaxDouble(pDX, m_DiffuseL, 1., 200.);
+	DDX_Control(pDX, IDC_HDR_REF_WHITE_COMBO, m_hdrRefWhiteCombo);
 	DDX_Text(pDX, IDC_EDIT_HDR_REF_WHITE, m_HDRRefWhite);
 	DDV_MinMaxDouble(pDX, m_HDRRefWhite, 10., 1000.);
 	DDX_Text(pDX, IDC_EDIT_MASTER_MINL, m_MasterMinL);
@@ -198,7 +200,9 @@ BEGIN_MESSAGE_MAP(CReferencesPropPage, CPropertyPageWithHelp)
 	ON_EN_CHANGE(IDC_BLUE_X, OnChangeEditGammaAvg)
 	ON_EN_CHANGE(IDC_BLUE_Y, OnChangeEditGammaAvg)
 	ON_EN_CHANGE(IDC_EDIT_DIFFUSE_WHITE, OnChangeEditGammaAvg)
-	ON_EN_CHANGE(IDC_EDIT_HDR_REF_WHITE, OnChangeEditGammaAvg)
+	ON_EN_CHANGE(IDC_EDIT_HDR_REF_WHITE, OnChangeEditHdrRefWhite)
+	ON_CBN_SELCHANGE(IDC_HDR_REF_WHITE_COMBO, OnSelchangeHdrRefWhiteCombo)
+	ON_BN_CLICKED(IDC_BTN_HDR_REF_WHITE_RESET, OnBtnHdrRefWhiteReset)
 	ON_EN_CHANGE(IDC_EDIT_MASTER_MINL, OnChangeEditGammaAvg)
 	ON_EN_CHANGE(IDC_EDIT_MASTER_MAXL, OnChangeEditGammaAvg)
 	ON_EN_CHANGE(IDC_EDIT_CONTENT_MAXL, OnChangeEditGammaAvg)
@@ -539,6 +543,14 @@ BOOL CReferencesPropPage::OnInitDialog()
 		m_BT2390_WSCtrl.EnableWindow (FALSE);
 		m_BT2390_WS1Ctrl.EnableWindow (FALSE);
 	}
+	m_hdrRefWhiteCombo.ResetContent();
+	m_hdrRefWhiteCombo.AddString("HCFR default (94.38)");
+	m_hdrRefWhiteCombo.AddString("sRGB / Windows (80)");
+	m_hdrRefWhiteCombo.AddString("SDR reference (100)");
+	m_hdrRefWhiteCombo.AddString("ITU-R BT.2408 (203)");
+	m_hdrRefWhiteCombo.AddString("Custom");
+	SyncHDRRefWhiteCombo(m_HDRRefWhite);
+
 	return TRUE;  // return TRUE unless you set the focus to a control
 	              // EXCEPTION: OCX Property Pages should return FALSE
 }
@@ -801,4 +813,104 @@ void CReferencesPropPage::UpdateColorSpaceValues()
 		m_manualBluex  = blueColor.GetxyYValue()[0];
 		m_manualBluey  = blueColor.GetxyYValue()[1];
 	}
+}
+static const double kHDRRefWhitePresets[] = {
+	HDR_REF_WHITE_DEFAULT, // 0: HCFR default (94.38)
+	80.0,                  // 1: sRGB / Windows
+	100.0,                 // 2: SDR reference (BT.2035)
+	203.0                  // 3: ITU-R BT.2408
+};
+static const int kHDRRefWhiteCustomIndex = 4;
+
+void CReferencesPropPage::SyncHDRRefWhiteCombo(double nits)
+{
+	int sel = kHDRRefWhiteCustomIndex;
+	if (IsHDRRefWhiteDefault(nits))
+		sel = 0;
+	else
+	{
+		for (int i = 1; i < kHDRRefWhiteCustomIndex; ++i)
+		{
+			if (fabs(nits - kHDRRefWhitePresets[i]) < 0.01)
+			{
+				sel = i;
+				break;
+			}
+		}
+	}
+	m_hdrRefWhiteCombo.SetCurSel(sel);
+	if (CWnd *pReset = GetDlgItem(IDC_BTN_HDR_REF_WHITE_RESET))
+		pReset->EnableWindow(!IsHDRRefWhiteDefault(nits));
+}
+
+void CReferencesPropPage::SetHDRRefWhiteEdit(double nits)
+{
+	CString str;
+	if (IsHDRRefWhiteDefault(nits))
+		str.Format("%.5f", HDR_REF_WHITE_DEFAULT);
+	else if (fabs(nits - floor(nits + 0.5)) < 1e-4)
+		str.Format("%.0f", nits);
+	else
+		str.Format("%.6g", nits);
+
+	m_bUpdatingHDRRefWhite = TRUE;
+	SetDlgItemText(IDC_EDIT_HDR_REF_WHITE, str);
+	m_bUpdatingHDRRefWhite = FALSE;
+}
+
+void CReferencesPropPage::OnSelchangeHdrRefWhiteCombo()
+{
+	int sel = m_hdrRefWhiteCombo.GetCurSel();
+	if (sel >= 0 && sel < kHDRRefWhiteCustomIndex)
+	{
+		m_HDRRefWhite = kHDRRefWhitePresets[sel];
+		SetHDRRefWhiteEdit(m_HDRRefWhite);
+		if (CWnd *pReset = GetDlgItem(IDC_BTN_HDR_REF_WHITE_RESET))
+			pReset->EnableWindow(!IsHDRRefWhiteDefault(m_HDRRefWhite));
+		m_isModified = TRUE;
+		m_bSave = TRUE;
+		SetModified(TRUE);
+	}
+	else if (sel == kHDRRefWhiteCustomIndex)
+	{
+		if (CEdit *pEdit = (CEdit *)GetDlgItem(IDC_EDIT_HDR_REF_WHITE))
+		{
+			pEdit->SetFocus();
+			pEdit->SetSel(0, -1);
+		}
+	}
+}
+
+void CReferencesPropPage::OnChangeEditHdrRefWhite()
+{
+	if (m_bUpdatingHDRRefWhite)
+		return;
+
+	CString str;
+	GetDlgItemText(IDC_EDIT_HDR_REF_WHITE, str);
+	str.Trim();
+	char *end = NULL;
+	double val = strtod(str, &end);
+	if (!str.IsEmpty() && end != NULL && *end == '\0')
+		SyncHDRRefWhiteCombo(val);
+	else
+	{
+		m_hdrRefWhiteCombo.SetCurSel(kHDRRefWhiteCustomIndex);
+		if (CWnd *pReset = GetDlgItem(IDC_BTN_HDR_REF_WHITE_RESET))
+			pReset->EnableWindow(TRUE);
+	}
+
+	m_isModified = TRUE;
+	m_bSave = TRUE;
+	SetModified(TRUE);
+}
+
+void CReferencesPropPage::OnBtnHdrRefWhiteReset()
+{
+	m_HDRRefWhite = HDR_REF_WHITE_DEFAULT;
+	SetHDRRefWhiteEdit(m_HDRRefWhite);
+	SyncHDRRefWhiteCombo(m_HDRRefWhite);
+	m_isModified = TRUE;
+	m_bSave = TRUE;
+	SetModified(TRUE);
 }

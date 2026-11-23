@@ -71,6 +71,8 @@ public:
 	CEdit	m_TargetMinLCtrl, m_TargetMaxLCtrl, m_DiffuseLCtrl, m_MasterMinLCtrl, m_MasterMaxLCtrl, m_ContentMaxLCtrl, m_FrameAvgMaxLCtrl, m_bOverRideTargsCtrl, m_useToneMapCtrl;
 	CEdit	m_TargetSysGammaCtrl, m_BT2390_BSCtrl, m_BT2390_WSCtrl, m_BT2390_WS1Ctrl;
 	double	m_HDRRefWhite;
+	CComboBox	m_hdrRefWhiteCombo;
+	BOOL	m_bUpdatingHDRRefWhite;
 	BOOL	m_changeWhiteCheck;
 	CEdit	m_changeWhiteCheckCtrl;
 	BOOL	m_useMeasuredGamma;
@@ -129,11 +131,16 @@ protected:
 	afx_msg void OnSelchangeCCmodeCombo();
 	afx_msg void OnChangeEditGammaOffset();
 	afx_msg void OnChangeEditManualGOffset();
+	afx_msg void OnSelchangeHdrRefWhiteCombo();
+	afx_msg void OnChangeEditHdrRefWhite();
+	afx_msg void OnBtnHdrRefWhiteReset();
 	//}}AFX_MSG
 	afx_msg void OnControlClicked(UINT nID);
 	DECLARE_MESSAGE_MAP()
 
 	void UpdateColorSpaceValues();
+	void SyncHDRRefWhiteCombo(double nits);
+	void SetHDRRefWhiteEdit(double nits);
 
 };
 

@@ -276,6 +276,8 @@
 #define IDR_PATTERN_CROSSdv             394
 #define IDC_EDIT_DIFFUSE_WHITE          395
 #define IDC_EDIT_HDR_REF_WHITE          1299
+#define IDC_HDR_REF_WHITE_COMBO         1362
+#define IDC_BTN_HDR_REF_WHITE_RESET     1363
 #define IDC_EDIT_MASTER_MINL            396
 #define IDC_EDIT_CONTENT_MAXL           397
 #define IDC_EDIT_TARGET_MINL            398
