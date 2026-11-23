@@ -38,9 +38,9 @@ IMPLEMENT_DYNCREATE(CAppearancePropPage, CPropertyPageWithHelp)
 CAppearancePropPage::CAppearancePropPage() : CPropertyPageWithHelp(CAppearancePropPage::IDD)
 {
 	//{{AFX_DATA_INIT(CAppearancePropPage)
-	m_themeComboIndex = -1;
-	m_drawMenuborder = FALSE;
-	m_useCustomColor = -1;
+	m_themeComboIndex = 0;
+	m_drawMenuborder = TRUE;
+	m_useCustomColor = FALSE;
 	m_doSelectDisabledItem = FALSE;
 	m_doGlooming = FALSE;
 	m_doXpBlending = FALSE;

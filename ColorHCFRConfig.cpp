@@ -229,6 +229,7 @@ CColorHCFRConfig::CColorHCFRConfig()
 
 	InitDefaults();
 	LoadSettings();
+	SetPropertiesSheetValues();
 	ApplySettings(TRUE);
 	m_isModified = false;
 	InitializeCriticalSection ( & LogFileCritSec );
@@ -409,6 +410,18 @@ BOOL CColorHCFRConfig::LoadSettings()
 	m_bWhiteBkgndOnFile=GetProfileInt("Appearance","WhiteBkgndOnFile",FALSE);
 	m_bmoveMessage=GetProfileInt("Appearance","MoveMessage",FALSE);
 	m_useCustomColor=GetProfileInt("Appearance","UseCustomColor",FALSE);
+	if (m_useCustomColor != 0 && m_useCustomColor != 1)
+		m_useCustomColor = FALSE;
+	if (!(m_GammaRel >= 0.0 && m_GammaRel <= 5.0)) m_GammaRel = 0.0;
+	if (!(m_Split >= 0.0 && m_Split <= 100.0)) m_Split = 100.0;
+	if (!(m_manualWhitex >= 0.1 && m_manualWhitex <= 0.9)) m_manualWhitex = 0.312712;
+	if (!(m_manualWhitey >= 0.1 && m_manualWhitey <= 0.9)) m_manualWhitey = 0.329008;
+	if (!(m_manualRedx >= 0.1 && m_manualRedx <= 0.9)) m_manualRedx = 0.6400;
+	if (!(m_manualRedy >= 0.1 && m_manualRedy <= 0.9)) m_manualRedy = 0.3300;
+	if (!(m_manualGreenx >= 0.1 && m_manualGreenx <= 0.9)) m_manualGreenx = 0.3000;
+	if (!(m_manualGreeny >= 0.1 && m_manualGreeny <= 0.9)) m_manualGreeny = 0.6000;
+	if (!(m_manualBluex >= 0.001 && m_manualBluex <= 0.9)) m_manualBluex = 0.1500;
+	if (!(m_manualBluey >= 0.001 && m_manualBluey <= 0.9)) m_manualBluey = 0.0600;
 	m_fxColorWindow=GetProfileColor("Appearance","Window Color");
 	m_fxColorMenu=GetProfileColor("Appearance","Menu Color");
 	m_fxColorSelection=GetProfileColor("Appearance","Selection Color");

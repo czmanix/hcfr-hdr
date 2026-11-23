@@ -198,7 +198,7 @@ void CGDIGenePropPage::OnOK()
 		m_busePic = false;
 	}
 	GetConfig()->m_isModified = true;
-	GetConfig()->ApplySettings(FALSE);
+	GetConfig()->ApplySettings(TRUE);
 	GetConfig()->m_isModified = false;
 //	GetDocument()->UpdateAllViews(NULL, UPD_SELECTEDCOLOR, NULL);
 	CPropertyPageWithHelp::OnOK();

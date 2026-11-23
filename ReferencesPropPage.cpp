@@ -44,6 +44,8 @@ CReferencesPropPage::CReferencesPropPage() : CPropertyPageWithHelp(CReferencesPr
 	m_CCMode = GCD;
 	m_GammaRef = 2.2;
 	m_GammaAvg = 2.2;
+	m_GammaRel = 0.0;
+	m_Split = 100.0;
 	m_changeWhiteCheck = FALSE;
 	m_userBlack = FALSE;
 	m_bOverRideTargs = FALSE;
@@ -52,8 +54,15 @@ CReferencesPropPage::CReferencesPropPage() : CPropertyPageWithHelp(CReferencesPr
 	m_useMeasuredGamma = FALSE;
 	m_GammaOffsetType = 4;
 	m_manualGOffset = 0.099;
-    m_manualWhitex = 0.3127;
-    m_manualWhitey = 0.3290;
+    m_manualWhitex = 0.312712;
+    m_manualWhitey = 0.329008;
+    m_manualRedx = 0.6400;
+    m_manualRedy = 0.3300;
+    m_manualGreenx = 0.3000;
+    m_manualGreeny = 0.6000;
+    m_manualBluex = 0.1500;
+    m_manualBluey = 0.0600;
+    m_bSave = FALSE;
 	m_MasterMinL = 0.0;
 	m_MasterMaxL = 4000.0;
 	m_ContentMaxL = 4000.0;
