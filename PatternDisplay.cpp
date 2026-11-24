@@ -484,7 +484,8 @@ void CPatternDisplay::DisplayColorLevelPattern(INT clrLevel)
 
 void CPatternDisplay::OnPatternBlack() 
 {
-	BeginPatternDisplay(this, m_patternDGenerator);
+	if (!BeginPatternDisplay(this, m_patternDGenerator))
+		return;
 	m_patternDGenerator->DisplayRGBColor(ColorRGBDisplay(0,0,0),CGenerator::MT_SPECIAL);
 	WaitKey();
 	EndPatternDisplay(this, m_patternDGenerator);
@@ -492,7 +493,8 @@ void CPatternDisplay::OnPatternBlack()
 
 void CPatternDisplay::OnPatternWhite() 
 {
-	BeginPatternDisplay(this, m_patternDGenerator);
+	if (!BeginPatternDisplay(this, m_patternDGenerator))
+		return;
 	m_patternDGenerator->DisplayRGBColor(ColorRGBDisplay(100,100,100),CGenerator::MT_SPECIAL);
 	WaitKey();
 	EndPatternDisplay(this, m_patternDGenerator);
@@ -500,7 +502,8 @@ void CPatternDisplay::OnPatternWhite()
 
 void CPatternDisplay::OnPatternRed() 
 {
-	BeginPatternDisplay(this, m_patternDGenerator);
+	if (!BeginPatternDisplay(this, m_patternDGenerator))
+		return;
 	m_patternDGenerator->DisplayRGBColor(ColorRGBDisplay(100,0,0),CGenerator::MT_SPECIAL);
 	WaitKey();
 	EndPatternDisplay(this, m_patternDGenerator);
@@ -508,7 +511,8 @@ void CPatternDisplay::OnPatternRed()
 
 void CPatternDisplay::OnPatternGreen() 
 {
-	BeginPatternDisplay(this, m_patternDGenerator);
+	if (!BeginPatternDisplay(this, m_patternDGenerator))
+		return;
 	m_patternDGenerator->DisplayRGBColor(ColorRGBDisplay(0,100,0),CGenerator::MT_SPECIAL);
 	WaitKey();
 	EndPatternDisplay(this, m_patternDGenerator);
@@ -516,7 +520,8 @@ void CPatternDisplay::OnPatternGreen()
 
 void CPatternDisplay::OnPatternBlue() 
 {
-	BeginPatternDisplay(this, m_patternDGenerator);
+	if (!BeginPatternDisplay(this, m_patternDGenerator))
+		return;
 	m_patternDGenerator->DisplayRGBColor(ColorRGBDisplay(0,0,100),CGenerator::MT_SPECIAL);
 	WaitKey();
 	EndPatternDisplay(this, m_patternDGenerator);
@@ -524,7 +529,8 @@ void CPatternDisplay::OnPatternBlue()
 
 void CPatternDisplay::OnPatternCyan() 
 {
-	BeginPatternDisplay(this, m_patternDGenerator);
+	if (!BeginPatternDisplay(this, m_patternDGenerator))
+		return;
 	m_patternDGenerator->DisplayRGBColor(ColorRGBDisplay(0,100,100),CGenerator::MT_SPECIAL);
 	WaitKey();
 	EndPatternDisplay(this, m_patternDGenerator);
@@ -532,7 +538,8 @@ void CPatternDisplay::OnPatternCyan()
 
 void CPatternDisplay::OnPatternMagenta() 
 {
-	BeginPatternDisplay(this, m_patternDGenerator);
+	if (!BeginPatternDisplay(this, m_patternDGenerator))
+		return;
 	m_patternDGenerator->DisplayRGBColor(ColorRGBDisplay(100,0,100),CGenerator::MT_SPECIAL);
 	WaitKey();
 	EndPatternDisplay(this, m_patternDGenerator);
@@ -540,7 +547,8 @@ void CPatternDisplay::OnPatternMagenta()
 
 void CPatternDisplay::OnPatternGrey() 
 {
-	BeginPatternDisplay(this, m_patternDGenerator);
+	if (!BeginPatternDisplay(this, m_patternDGenerator))
+		return;
 	m_patternDGenerator->DisplayRGBColor(ColorRGBDisplay(50,50,50),CGenerator::MT_SPECIAL);
 	WaitKey();
 	EndPatternDisplay(this, m_patternDGenerator);
@@ -548,7 +556,8 @@ void CPatternDisplay::OnPatternGrey()
 
 void CPatternDisplay::OnPatternYellow() 
 {
-	BeginPatternDisplay(this, m_patternDGenerator);
+	if (!BeginPatternDisplay(this, m_patternDGenerator))
+		return;
 	m_patternDGenerator->DisplayRGBColor(ColorRGBDisplay(100,100,0),CGenerator::MT_SPECIAL);
 	WaitKey();
 	EndPatternDisplay(this, m_patternDGenerator);
@@ -932,7 +941,8 @@ void CPatternDisplay::DisplayPatternPicture(HMODULE hPatterns, UINT iMode)
 	int		iCurrId=0;
 	int		maxPat=0;
 	
-	BeginPatternDisplay(this, m_patternDGenerator);
+	if (!BeginPatternDisplay(this, m_patternDGenerator))
+		return;
 	if (iMode == 0) { // 16*16 Patterns
 		m_patternDGenerator->DisplayPatternPicture(hPatterns,idPict16Ress[iCurrId][0],idPict16Ress[iCurrId][1]);
 		maxPat = 10;

@@ -608,6 +608,17 @@ BOOL CDataSetDoc::IsManualDVDGenerator() const
 	return m_pGenerator && m_pGenerator->IsKindOf(RUNTIME_CLASS(CManualDVDGenerator));
 }
 
+void CDataSetDoc::ApplyHDRRefWhite()
+{
+	if ( m_pGenerator == NULL )
+		return;
+
+	double oldWhite = GetHDRRefWhite();
+	GetConfig()->ApplyHDRRefWhite(this);
+	if ( GetHDRRefWhite() != oldWhite )
+		UpdateAllViews ( NULL, UPD_EVERYTHING );
+}
+
 CDataSetDoc::~CDataSetDoc()
 {
 	if ( m_pWndPos )
@@ -983,7 +994,15 @@ void CDataSetDoc::Serialize(CArchive& ar)
 
 		// save Measure (with the HDR reference white of this document's generator, see CMeasure::Serialize)
 		GetConfig()->ApplyHDRRefWhite(this);
-		m_measure.Serialize(ar);
+		try
+		{
+			m_measure.Serialize(ar);
+		}
+		catch ( CException * )
+		{
+			GetConfig()->ApplyHDRRefWhite();	// the active document's white again
+			throw;
+		}
 		GetConfig()->ApplyHDRRefWhite();
 
 		// save Sensor & Generator
@@ -1407,6 +1426,8 @@ BOOL CDataSetDoc::OnOpenDocument(LPCTSTR lpszPathName)
 	
 	if(m_pSensor != NULL  && m_pGenerator != NULL )	
 	{
+		GetConfig()->ApplyHDRRefWhite(this);	// the frame activation refreshes it again when another document gets active
+
 		CString string = (CString)lpszPathName;
 		CString string2,name;
 		int	lastpos,pos = 0;
@@ -1455,6 +1476,7 @@ void CDataSetDoc::OnChangeGenerator()
 	{
 		CreateGenerator(page.GetCurrentID());
 		UpdateAllViews(NULL, UPD_GENERATORCONFIG);	// To update generator name displayed
+		ApplyHDRRefWhite();		// manual DVD <-> other generator changes the HDR reference white
 	}
 }
 

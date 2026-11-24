@@ -274,13 +274,8 @@ void CMultiFrame::OnMDIActivate(BOOL bActivate, CWnd* pActivateWnd, CWnd* pDeact
 
 	// the HDR reference white depends on the generator of the active document (manual DVD keeps the default)
 	CDataSetDoc * pDoc = bActivate ? DYNAMIC_DOWNCAST(CDataSetDoc, GetActiveDocument()) : NULL;
-	if ( pDoc && pDoc -> GetGenerator () )
-	{
-		double oldWhite = GetHDRRefWhite();
-		GetConfig()->ApplyHDRRefWhite(pDoc);
-		if ( GetHDRRefWhite() != oldWhite )
-			pDoc -> UpdateAllViews ( NULL, UPD_EVERYTHING );
-	}
+	if ( pDoc )
+		pDoc -> ApplyHDRRefWhite ();
 }
 
 void CMultiFrame::OnDestroy() 
