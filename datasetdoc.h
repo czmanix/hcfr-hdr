@@ -129,6 +129,7 @@ public:
 
 	CMeasure *GetMeasure() { return &m_measure; }
 	CGenerator *GetGenerator() { return m_pGenerator; }
+	BOOL IsManualDVDGenerator() const;	// discs of the manual DVD generator have their HDR patterns at the default reference white
 	CSensor *GetSensor() { return m_pSensor; }
 
 	void ShowViewOnTop(UINT nMsg);

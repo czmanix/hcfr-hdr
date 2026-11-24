@@ -815,7 +815,7 @@ void CGraphControl::DrawGraphs(CDC *pDC, CRect rect)
 				else
 					font.CreateFont(16,0,300,300,FW_SEMIBOLD,FALSE,FALSE,FALSE,0,OUT_STRING_PRECIS,CLIP_DEFAULT_PRECIS,PROOF_QUALITY,VARIABLE_PITCH | FF_MODERN,_T("Garamond"));
 					CFont* pOldFont = pDC->SelectObject(&font);
-					char outStr[10];
+					char outStr[64];
 					double y = m_graphArray[j].m_pointArray[i].y;
 					if (m_bLogYAxis)
 						y = pow(10.0, y);

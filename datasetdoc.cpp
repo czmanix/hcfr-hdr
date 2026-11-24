@@ -603,6 +603,11 @@ CDataSetDoc::CDataSetDoc()
 	m_nPat = 0;
 }
 
+BOOL CDataSetDoc::IsManualDVDGenerator() const
+{
+	return m_pGenerator && m_pGenerator->IsKindOf(RUNTIME_CLASS(CManualDVDGenerator));
+}
+
 CDataSetDoc::~CDataSetDoc()
 {
 	if ( m_pWndPos )
@@ -976,8 +981,10 @@ void CDataSetDoc::Serialize(CArchive& ar)
 		ar << header2;
 		ar << version;
 
-		// save Measure
+		// save Measure (with the HDR reference white of this document's generator, see CMeasure::Serialize)
+		GetConfig()->ApplyHDRRefWhite(this);
 		m_measure.Serialize(ar);
+		GetConfig()->ApplyHDRRefWhite();
 
 		// save Sensor & Generator
 		ar << m_pSensor;

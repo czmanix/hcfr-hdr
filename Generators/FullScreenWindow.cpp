@@ -1573,6 +1573,10 @@ void video_scale (CxImage *inImage)
 					fitW = (int)floor((double)destH * iW / iH + 0.5);
 				int offX = (destW - fitW) / 2;
 				int offY = (destH - fitH) / 2;
+				// CxImage::Draw stretches with nearest neighbour (the DC stretch mode is not used):
+				// resample bicubic first so gradients and photos scale smoothly, then draw 1:1
+				if (fitW != iW || fitH != iH)
+					newImage->Resample2(fitW, fitH, CxImage::IM_BICUBIC2, CxImage::OM_REPEAT, newImage);
 				SetRect ( &aRect, offX, offY, offX + fitW, offY + fitH );
 			} else {
 				int startX, startY, sizeW, sizeH;
@@ -1606,10 +1610,7 @@ void video_scale (CxImage *inImage)
 				}
 			}
 		}
-		int oldStretchMode = dc.SetStretchBltMode(HALFTONE);
-		SetBrushOrgEx(dc, 0, 0, NULL);
 		newImage->Draw(dc,aRect);
-		dc.SetStretchBltMode(oldStretchMode);
 		delete newImage;
 	} else
 	{

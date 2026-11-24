@@ -7629,7 +7629,7 @@ void CMainView::OnInitDefaults()
 	if (rv == 6)
 	{
 		CString strlang = GetConfig()->strLang;
-		DeleteFile("ColorHCFR.ini");
+		DeleteFile(GetConfig()->m_iniFileName);	// next to the exe, not in the current directory
 		GetConfig()->InitDefaults();
 		GetConfig()->LoadSettings();
 		GetConfig()->ApplySettings(TRUE);

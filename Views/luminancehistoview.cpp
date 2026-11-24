@@ -103,9 +103,8 @@ CLuminanceGrapher::CLuminanceGrapher()
 	m_showL=GetConfig()->GetProfileInt("Luminance Histo","Show L",FALSE);
 	m_abY=GetConfig()->GetProfileInt("Luminance Histo","Absolute Y",FALSE);
 	m_logY=GetConfig()->GetProfileInt("Luminance Histo","Log Y",FALSE);
-	m_graphCtrl.SetYAxisProps(m_logY?"":m_abY?" cd m-2":m_showL?"":"%", m_logY?0.5:10, m_logY?-4:0, m_logY?4:100);
+	ApplyYAxisMode();
 	m_graphCtrl.SetScale(0,100,m_logY?-2:0,m_logY?3:100);
-	m_graphCtrl.m_bLogYAxis = m_logY;
 	m_graphCtrl.ReadSettings("Luminance Histo");
 
 	m_showReference=GetConfig()->GetProfileInt("Luminance Histo","Show Reference",TRUE);
@@ -117,6 +116,12 @@ CLuminanceGrapher::CLuminanceGrapher()
 	m_showDataRef=GetConfig()->GetProfileInt("Luminance Histo","Show Reference Data",TRUE);	//Ki
 	m_graphCtrl.m_graphArray[0].p_Title="Luminance Response";
 
+}
+
+void CLuminanceGrapher::ApplyYAxisMode ()
+{
+	m_graphCtrl.SetYAxisProps(m_abY?" cd m-2 ":m_showL?"":m_logY?"":"%", m_logY?0.5:10, m_logY?-4:0, m_logY?4:100);
+	m_graphCtrl.m_bLogYAxis = m_logY;
 }
 
 void CLuminanceGrapher::UpdateGraph ( CDataSetDoc * pDoc )
@@ -535,7 +540,13 @@ void CLuminanceHistoView::SetUserInfo ( DWORD dwUserInfo )
 	m_Grapher.m_showDataRef		= ( dwUserInfo >> 6 ) & 0x0001;
 	m_Grapher.m_showL			= ( dwUserInfo >> 7 ) & 0x0001;
 	m_Grapher.m_abY				= ( dwUserInfo >> 8 ) & 0x0001;
+	BOOL bWasLogY = m_Grapher.m_graphCtrl.m_bLogYAxis;
 	m_Grapher.m_logY				= ( dwUserInfo >> 9 ) & 0x0001;
+
+	// the saved view may use another Y axis mode than the one read from the ini in the constructor
+	m_Grapher.ApplyYAxisMode();
+	if ( bWasLogY != m_Grapher.m_logY )
+		m_Grapher.m_graphCtrl.SetScale(0,100,m_Grapher.m_logY?-2:0,m_Grapher.m_logY?3:100);
 }
 
 void CLuminanceHistoView::OnSize(UINT nType, int cx, int cy) 
@@ -622,8 +633,7 @@ void CLuminanceHistoView::OnLumGraphL()
 	GetConfig()->WriteProfileInt("Luminance Histo","Absolute Y",m_Grapher.m_abY);
 	GetConfig()->WriteProfileInt("Luminance Histo","Show L",m_Grapher.m_showL);
 	GetConfig()->WriteProfileInt("Luminance Histo","Log Y",m_Grapher.m_logY);
-	m_Grapher.m_graphCtrl.SetYAxisProps(m_Grapher.m_abY?" cd m-2 ":m_Grapher.m_showL?"":m_Grapher.m_logY?"":"%", m_Grapher.m_logY?0.5:10, m_Grapher.m_logY?-4:0, m_Grapher.m_logY?4:100);
-	m_Grapher.m_graphCtrl.m_bLogYAxis = m_Grapher.m_logY;
+	m_Grapher.ApplyYAxisMode();
 	OnUpdate(NULL,NULL,NULL);
 	OnGraphYScaleFit(); 
 }
@@ -640,8 +650,7 @@ void CLuminanceHistoView::OnLumGraphYab()
 	GetConfig()->WriteProfileInt("Luminance Histo","Absolute Y",m_Grapher.m_abY);
 	GetConfig()->WriteProfileInt("Luminance Histo","Show L",m_Grapher.m_showL);
 	GetConfig()->WriteProfileInt("Luminance Histo","Log Y",m_Grapher.m_logY);
-	m_Grapher.m_graphCtrl.SetYAxisProps(m_Grapher.m_abY?" cd m-2 ":m_Grapher.m_showL?"":m_Grapher.m_logY?"":"%", m_Grapher.m_logY?0.5:10, m_Grapher.m_logY?-4:0, m_Grapher.m_logY?4:100);
-	m_Grapher.m_graphCtrl.m_bLogYAxis = m_Grapher.m_logY;
+	m_Grapher.ApplyYAxisMode();
 	OnUpdate(NULL,NULL,NULL);
 	OnGraphYScaleFit();
 }
@@ -658,8 +667,7 @@ void CLuminanceHistoView::OnLumGraphYlog()
 	GetConfig()->WriteProfileInt("Luminance Histo","Absolute Y",m_Grapher.m_abY);
 	GetConfig()->WriteProfileInt("Luminance Histo","Show L",m_Grapher.m_showL);
 	GetConfig()->WriteProfileInt("Luminance Histo","Log Y",m_Grapher.m_logY);
-	m_Grapher.m_graphCtrl.SetYAxisProps(m_Grapher.m_abY?" cd m-2 ":m_Grapher.m_showL?"":m_Grapher.m_logY?"":"%", m_Grapher.m_logY?0.5:10, m_Grapher.m_logY?-4:0, m_Grapher.m_logY?4:100);
-	m_Grapher.m_graphCtrl.m_bLogYAxis = m_Grapher.m_logY;
+	m_Grapher.ApplyYAxisMode();
 	OnUpdate(NULL,NULL,NULL);
 	OnGraphYScaleFit();
 }

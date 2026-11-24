@@ -39,6 +39,8 @@
 #include "ToolbarPropPage.h"
 #include <map>
 
+class CDataSetDoc;
+
 class CColorHCFRConfig  
 {
 public:
@@ -163,7 +165,9 @@ public:
 	bool SetGeneratorType(GeneratorType type);
 	GeneratorType GetGeneratorType(const CString &generatorString) const;
 	GeneratorType GetGeneratorType() const;
-	void ApplyHDRRefWhite();	// passes m_HDRRefWhite to libHCFR (the manual DVD generator keeps the default)
+	// passes m_HDRRefWhite to libHCFR; documents of the manual DVD generator keep the default white.
+	// pDoc NULL: the active document decides (the New Document generator choice when there is none)
+	void ApplyHDRRefWhite(CDataSetDoc * pDoc = NULL);
 
 	BOOL IsProfileEntryDefined(LPCTSTR lpszSection,LPCTSTR lpszEntry);
 

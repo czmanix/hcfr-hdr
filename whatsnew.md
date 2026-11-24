@@ -27,6 +27,9 @@ Přehled změn v tomto forku (`czmanix/hcfr-hdr`, verze **3.5.5.0**) oproti pův
 - **Modernější tooltipy a plynulejší změna velikosti okna** — okamžité tooltipy bez problikávání a výrazně rychlejší překreslování hlavní mřížky i CIE grafu při změně velikosti okna.
 - **Oprava dialogů za splash screenem** — hlášky zobrazené při startu aplikace už nezůstávají schované za úvodní obrazovkou.
 - **Oprava poškození nastavení** — potvrzení vlastností generátoru před prvním otevřením *Preferences* už nepřepisuje uložené předvolby.
+- **Opravy stability a správnosti dat** — pád grafu luminance po otevření `.chc` s jiným režimem osy Y (log/lineární), poškozené rozložení paměti hlavního okna v x64 (neuzavřené `#pragma pack` v hlavičkách madVR), možný pád při otevření menu během obrazce *Additional Patterns*, use-after-free při použití vlastních primárek, vlastní primárky přepisující referenci Rec.601 (SDTV) a přeházené hodnoty HiRes / integrační čas / Adapt sondy Argyll při načtení `.chc`.
+- **Referenční bílá HDR podle generátoru dokumentu** — výjimka pro ruční DVD (výchozí bílá) se řídí generátorem aktivního dokumentu místo poslední volby v průvodci a do `.chc` se ukládá bílá, se kterou dokument skutečně měří.
+- **HDR10 a obrazce** — černé zatemňovací okno na ostatních monitorech zůstává v SDR (žádné falešné varování o nedostupném HDR10), škálované testovací obrázky se převzorkují bikubicky (plynulé gradace a pleťové tóny) a *Reset prefs* maže `ColorHCFR.ini` vedle exe bez ohledu na pracovní složku.
 
 ## Build, 64bitová verze a instalátor
 

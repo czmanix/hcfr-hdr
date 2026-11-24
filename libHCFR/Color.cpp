@@ -730,6 +730,7 @@ CColorReference::CColorReference(ColorStandard aColorStandard, WhiteTarget aWhit
 {
 	m_standard = aColorStandard;
     ColorxyY* primaries = primariesRec601;
+    ColorxyY customPrimaries[3];	// CUSTOM must not overwrite the shared primaries tables
 
 	switch(aColorStandard)
 	{
@@ -739,9 +740,10 @@ CColorReference::CColorReference(ColorStandard aColorStandard, WhiteTarget aWhit
 			whiteColor=illuminantD65;
 			whiteName="D65";
 			m_white=D65;
-			primaries[0] = c_redColor.isValid()?c_redColor:primariesRec709[0];
-			primaries[1] = c_greenColor.isValid()?c_greenColor:primariesRec709[1];
-			primaries[2] = c_blueColor.isValid()?c_blueColor:primariesRec709[2];
+			customPrimaries[0] = c_redColor.isValid()?c_redColor:primariesRec709[0];
+			customPrimaries[1] = c_greenColor.isValid()?c_greenColor:primariesRec709[1];
+			customPrimaries[2] = c_blueColor.isValid()?c_blueColor:primariesRec709[2];
+			primaries = customPrimaries;
 			break;
 		}
 		case PALSECAM:

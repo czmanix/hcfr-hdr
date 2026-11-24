@@ -127,6 +127,7 @@ BEGIN_MESSAGE_MAP(CMultiFrame, CNewMDIChildWnd)
 	//{{AFX_MSG_MAP(CMultiFrame)
 	ON_WM_GETMINMAXINFO()
 	ON_WM_DESTROY()
+	ON_WM_MDIACTIVATE()
 	ON_WM_SIZE()
     ON_MESSAGE(WM_APPCOMMAND, OnAppCommand)
 	ON_NOTIFY(CTCN_SELCHANGE, IDC_TABCTRL, OnTabChanged)
@@ -265,6 +266,21 @@ void CMultiFrame::OnGetMinMaxInfo(MINMAXINFO FAR* lpMMI)
 		lpMMI->ptMinTrackSize.x = m_MinSize.x - 300;
 		lpMMI->ptMinTrackSize.y = m_MinSize.y - 200;
 	}*/
+}
+
+void CMultiFrame::OnMDIActivate(BOOL bActivate, CWnd* pActivateWnd, CWnd* pDeactivateWnd)
+{
+	CNewMDIChildWnd::OnMDIActivate(bActivate, pActivateWnd, pDeactivateWnd);
+
+	// the HDR reference white depends on the generator of the active document (manual DVD keeps the default)
+	CDataSetDoc * pDoc = bActivate ? DYNAMIC_DOWNCAST(CDataSetDoc, GetActiveDocument()) : NULL;
+	if ( pDoc && pDoc -> GetGenerator () )
+	{
+		double oldWhite = GetHDRRefWhite();
+		GetConfig()->ApplyHDRRefWhite(pDoc);
+		if ( GetHDRRefWhite() != oldWhite )
+			pDoc -> UpdateAllViews ( NULL, UPD_EVERYTHING );
+	}
 }
 
 void CMultiFrame::OnDestroy() 

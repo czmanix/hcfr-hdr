@@ -262,11 +262,12 @@ void CMeasure::Serialize(CArchive& ar)
 
 	if (ar.IsStoring())
 	{
-	    int version = IsHDRRefWhiteDefault(GetConfig()->m_HDRRefWhite) ? 17 : 18;
+	    // the reference white in effect (the default for documents of the manual DVD generator)
+	    int version = IsHDRRefWhiteDefault() ? 17 : 18;
 		ar << version;
 
 		if (version > 17)
-			ar << GetConfig()->m_HDRRefWhite;
+			ar << GetHDRRefWhite();
 
 		ar << GetConfig()->m_BT2390_BS;
 		ar << GetConfig()->m_BT2390_WS;

@@ -84,8 +84,9 @@ edited normally. Keep new files ASCII. `.vcxproj` files are UTF-8 with BOM.
   - With HDR10 enabled in GDI modes, `CFullScreenWindow::PaintHdr10` draws measurement patterns
     through `CD3D11HdrOutput` (10-bit `R10G10B10A2` swap chain, `G2084_NONE_P2020`, requires Windows
     HDR on); test images/animations stay in GDI. `libHDR` (D3D12/NvAPI) is only used when HDR10 is off.
-  - Resizable test pattern images scale to fill the display while preserving aspect ratio using
-    `HALFTONE`. Fullscreen pattern handlers pass `Init(0, TRUE)` so they show even in `DISPLAY_GDI_Hide`.
+  - Resizable test pattern images scale to fill the display while preserving aspect ratio: they are
+    resampled bicubic (`CxImage::Resample2`) and drawn 1:1, because `CxImage::Draw` stretches with
+    nearest neighbour and ignores the DC stretch mode. Fullscreen pattern handlers pass `Init(0, TRUE)` so they show even in `DISPLAY_GDI_Hide`.
   - `CPatternDisplay` (*Additional Patterns*) uses `CGDIGenerator(int, BOOL)` which must **not** call
     `Init()` in its constructor; `BeginPatternDisplay`/`EndPatternDisplay` hide and restore the dialog
     around each fullscreen pattern.

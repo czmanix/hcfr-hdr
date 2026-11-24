@@ -36,7 +36,7 @@
 
 #include <windows.h>
 
-#pragma pack(1)
+#pragma pack(push, 1)
 
 // ============================================================================
 // I. THE EASY WAY
@@ -428,6 +428,8 @@ void Localize_IpAddressDialog (LPCWSTR title,          // find madTPG instance..
 
 
 // ----------------------------------------------------------------------------
+
+#pragma pack(pop)
 
 #ifdef __cplusplus
   }

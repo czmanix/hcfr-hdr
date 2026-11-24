@@ -73,6 +73,7 @@ public:
 
 // Operations
 	void UpdateGraph ( CDataSetDoc * pDoc );
+	void ApplyYAxisMode ();	// syncs the Y axis (units, log scale) with m_logY / m_abY / m_showL
 
 protected:
 	void AddPointtoLumGraph(int ColorSpace,int ColorIndex,int Size,int PointIndex, double GammaOffset, CDataSetDoc *pDataSet,long GraphID, BOOL bIRE);

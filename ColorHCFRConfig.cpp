@@ -810,9 +810,12 @@ void CColorHCFRConfig::ApplySettings(BOOL isStartupApply)
 	SetFxColors(m_fxColorWindow,m_fxColorMenu,m_fxColorSelection,m_fxColorText);
 
 	// Apply reference settings
+	ColorXYZ previousWhite;
     if(GetColorApp()->m_pColorReference)
     {
+		previousWhite = GetColorApp()->m_pColorReference->GetWhite();
         delete GetColorApp()->m_pColorReference;
+		GetColorApp()->m_pColorReference = NULL;
     }
 
 	//Custom White only
@@ -826,7 +829,7 @@ void CColorHCFRConfig::ApplySettings(BOOL isStartupApply)
 	    ColorxyY redcolor=ColorxyY(m_manualRedx,m_manualRedy);
 		ColorxyY greencolor=ColorxyY(m_manualGreenx,m_manualGreeny);
 		ColorxyY bluecolor=ColorxyY(m_manualBluex,m_manualBluey);
-	    GetColorApp()->m_pColorReference = new CColorReference(m_colorStandard, m_whiteTarget,-1, " modified", 	GetColorApp()->m_pColorReference->GetWhite(), redcolor, greencolor, bluecolor);
+	    GetColorApp()->m_pColorReference = new CColorReference(m_colorStandard, m_whiteTarget,-1, " modified", 	previousWhite, redcolor, greencolor, bluecolor);
 	} 
 	else if (m_colorStandard == CUSTOM && m_whiteTarget == DCUST)	//Both
 	{
@@ -901,10 +904,19 @@ CColorHCFRConfig::GeneratorType CColorHCFRConfig::GetGeneratorType() const
 	return m_generatorType;
 }
 
-void CColorHCFRConfig::ApplyHDRRefWhite()
+void CColorHCFRConfig::ApplyHDRRefWhite(CDataSetDoc * pDoc)
 {
+	if ( pDoc == NULL )
+	{
+		CMDIFrameWnd * pMainFrame = DYNAMIC_DOWNCAST(CMDIFrameWnd, AfxGetMainWnd());
+		CMDIChildWnd * pChild = pMainFrame ? pMainFrame -> MDIGetActive () : NULL;
+		if ( pChild )
+			pDoc = DYNAMIC_DOWNCAST(CDataSetDoc, pChild -> GetActiveDocument ());
+	}
+
 	// discs of the manual DVD generator have their patterns at the default white
-	SetHDRRefWhite(m_generatorType == enumManual ? HDR_REF_WHITE_DEFAULT : m_HDRRefWhite);
+	BOOL bManualDVD = ( pDoc && pDoc -> GetGenerator () ) ? pDoc -> IsManualDVDGenerator () : ( m_generatorType == enumManual );
+	SetHDRRefWhite(bManualDVD ? HDR_REF_WHITE_DEFAULT : m_HDRRefWhite);
 }
 
 BOOL CColorHCFRConfig::IsProfileEntryDefined(LPCTSTR lpszSection,LPCTSTR lpszEntry)

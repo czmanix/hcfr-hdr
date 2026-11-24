@@ -64,6 +64,7 @@ CGenerator::CGenerator()
 
 	SetName("Not defined");  // Needs to be set for real generators
 	m_blankingWindow.m_bDisableCursorHiding = TRUE;
+	m_blankingWindow.m_bHdr10 = FALSE;	// black screens on the other monitors stay in GDI (no D3D11 HDR10 output)
 	ccwin = dw;
 }
 

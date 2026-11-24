@@ -213,12 +213,24 @@ void CPatternDisplay::CreateGenerator()
 	m_patternDGenerator = new CGDIGenerator(DISPLAY_GDI_Hide, GetConfig()->GetProfileInt("GDIGenerator","RGB_16_235",0));
 }
 
+// The pattern loops dispatch the messages of the other windows (paint, timers). The main window is
+// disabled meanwhile, like under a modal dialog: its menu (Additional Patterns, Exit) would otherwise
+// delete this dialog while its pattern loop is still running.
+static void EnableMainWindow(BOOL bEnable)
+{
+	CWnd *pMainWnd = AfxGetMainWnd();
+	if (pMainWnd && ::IsWindow(pMainWnd->GetSafeHwnd()))
+		pMainWnd->EnableWindow(bEnable);
+}
+
 static BOOL BeginPatternDisplay(CWnd *pDlg, CGenerator *pGen)
 {
 	if (pDlg && ::IsWindow(pDlg->GetSafeHwnd()))
 		pDlg->ShowWindow(SW_HIDE);
+	EnableMainWindow(FALSE);
 	if (!pGen->Init(0, TRUE))
 	{
+		EnableMainWindow(TRUE);
 		if (pDlg && ::IsWindow(pDlg->GetSafeHwnd()))
 			pDlg->ShowWindow(SW_SHOW);
 		return FALSE;
@@ -229,6 +241,7 @@ static BOOL BeginPatternDisplay(CWnd *pDlg, CGenerator *pGen)
 static void EndPatternDisplay(CWnd *pDlg, CGenerator *pGen)
 {
 	pGen->Release();
+	EnableMainWindow(TRUE);
 	if (pDlg && ::IsWindow(pDlg->GetSafeHwnd()))
 	{
 		pDlg->ShowWindow(SW_SHOW);

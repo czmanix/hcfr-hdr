@@ -172,17 +172,18 @@ void CArgyllSensor::Serialize(CArchive& archive)
         archive >> m_DisplayType;
         archive >> m_ReadingType;
         archive >> m_SpectralType;
-        if ( version > 3)
-            archive >> m_Adapt;
-        if ( version > 2)
-            archive >> m_intTime;
         if(version == 1)
         {
             UINT dummy;
             archive >> dummy;
         }
+        // same order as written above (versions 3 and 4 were read in reverse order before)
         archive >> m_debugMode;
         archive >> m_HiRes;
+        if ( version > 2)
+            archive >> m_intTime;
+        if ( version > 3)
+            archive >> m_Adapt;
 
         std::string errorMessage;
         ArgyllMeterWrapper::ArgyllMeterWrappers meters = ArgyllMeterWrapper::getDetectedMeters(errorMessage);

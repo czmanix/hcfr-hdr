@@ -152,6 +152,7 @@ protected:
 	//{{AFX_MSG(CMultiFrame)
 	afx_msg void OnGetMinMaxInfo(MINMAXINFO FAR* lpMMI);
 	afx_msg void OnDestroy();
+	afx_msg void OnMDIActivate(BOOL bActivate, CWnd* pActivateWnd, CWnd* pDeactivateWnd);
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnTabChanged(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnRightClick(NMHDR* pNMHDR, LRESULT* pResult);
