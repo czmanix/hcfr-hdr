@@ -297,7 +297,8 @@ void CGammaGrapher::AddPointtoLumGraph(int ColorSpace,int ColorIndex,int Size,in
 
 	if (pDataSet->GetMeasure()->GetGray(PointIndex).isValid())
 	{
-		pDataSet->GetMeasure()->SetGray(Size-1, pDataSet->GetMeasure()->GetOnOffWhite());
+		// (drawing must not change the measures: the 100% gray was overwritten here with the
+		// on/off contrast white, which changed gamma and gray dE after a contrast measurement)
 	if (ColorSpace == 0) 
 	{
 		blacklvl=pDataSet->GetMeasure()->GetGray(0).GetRGBValue((GetColorReference()))[ColorIndex];

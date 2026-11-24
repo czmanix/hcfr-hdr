@@ -28,6 +28,15 @@ Přehled změn v tomto forku (`czmanix/hcfr-hdr`, verze **3.5.5.0**) oproti pův
 - **Oprava dialogů za splash screenem** — hlášky zobrazené při startu aplikace už nezůstávají schované za úvodní obrazovkou.
 - **Oprava poškození nastavení** — potvrzení vlastností generátoru před prvním otevřením *Preferences* už nepřepisuje uložené předvolby.
 - **Opravy stability a správnosti dat** — pád grafu luminance po otevření `.chc` s jiným režimem osy Y (log/lineární), poškozené rozložení paměti hlavního okna v x64 (neuzavřené `#pragma pack` v hlavičkách madVR), možný pád při otevření menu během obrazce *Additional Patterns*, use-after-free při použití vlastních primárek, vlastní primárky přepisující referenci Rec.601 (SDTV) a přeházené hodnoty HiRes / integrační čas / Adapt sondy Argyll při načtení `.chc`.
+- **Opravy výpočtů (chyby převzaté z původního kódu)**:
+  - **ΔE šedé škály** — opravený vzorec u′ v CIE L\*u\*v\* (`12x` místo `12y`). Výchozí ΔE šedé („CIE2000, CIE76uv pro šedé“) byla podle směru odchylky podhodnocená až 2,5× (zelená–purpurová), po otevření starších `.chc` proto vyjde vyšší.
+  - **dICtCp podle ITU-R BT.2124** — škálování 720 a matice LMS z BT.2100 pro všechny standardy (dříve jas na 2/3 a chroma na 1/3 hodnoty, u standardů mimo BT.2020 navíc překlep v matici). Opravený překlep i v zobrazení hodnot LMS.
+  - **Teplota chromatičnosti** — opravený překlep v Robertsonově tabulce (CCT mezi 2 860 a 3 330 K vycházela až o 23 K níž).
+  - **Průměrná naměřená gamma u sRGB a L\*** se počítá z měření (dříve se zobrazovala cílová hodnota 2,18 / 2,35); reference Color Checkeru pro standard sRGB používají křivku sRGB.
+  - **Neúspěšné měření** sondy (saturace, odpojení) se už neukládá jako platná černá, ale ohlásí chybu s volbou Abort/Retry/Ignore.
+  - **Ruční kalibrace sondy podle referenčního kolorimetru** — prohozené naměřené a referenční hodnoty, matice dříve chybu sondy zvětšovala.
+  - **Grafy gammy a luminance** už při vykreslení nepřepisují naměřenou 100% šedou bílou z měření kontrastu.
+  - Změna korekční matice sondy přepočítá i volná měření, ANSI bílá s luxmetrem nebere minimum z opakovaných čtení, CIE94 nevrací NaN a průměry ΔE v tabulce nezdvojují součet při NaN.
 - **Referenční bílá HDR podle generátoru dokumentu** — výjimka pro ruční DVD (výchozí bílá) se řídí generátorem aktivního dokumentu místo poslední volby v průvodci a do `.chc` se ukládá bílá, se kterou dokument skutečně měří.
 - **HDR10 a obrazce** — černé zatemňovací okno na ostatních monitorech zůstává v SDR (žádné falešné varování o nedostupném HDR10), škálované testovací obrázky se převzorkují bikubicky (plynulé gradace a pleťové tóny) a *Reset prefs* maže `ColorHCFR.ini` vedle exe bez ohledu na pracovní složku.
 

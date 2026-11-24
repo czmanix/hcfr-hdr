@@ -2369,10 +2369,10 @@ CString CMainView::GetItemText(CColor & aMeasure, double YWhite, CColor & aRefer
 						str.Format("%.1f",aMeasure. GetDeltaE( YWhite, aReference, 1.0, GetColorReference(), GetConfig()->m_dE_form, true, GetConfig()->m_GammaOffsetType == 5?3:GetConfig()->gw_Weight ) );
        					dE=aMeasure.GetDeltaE ( YWhite, aReference, 1.0, GetColorReference(), GetConfig()->m_dE_form, true, GetConfig()->m_GammaOffsetType == 5?3:GetConfig()->gw_Weight );
        					dL=aMeasure.GetDeltaLCH ( YWhite, aReference, 1.0, GetColorReference(), GetConfig()->m_dE_form, true, GetConfig()->m_GammaOffsetType == 5?3:GetConfig()->gw_Weight, dC, dH );
-						dEavg+=(isNan(dE)?dEavg:dE);
-						dLavg+=(isNan(dL)?dLavg:dL);
-						dCavg+=(isNan(dC)?dCavg:dC);
-						dHavg+=(isNan(dH)?dHavg:dH);
+						dEavg+=(isNan(dE)?0.0:dE);
+						dLavg+=(isNan(dL)?0.0:dL);
+						dCavg+=(isNan(dC)?0.0:dC);
+						dHavg+=(isNan(dH)?0.0:dH);
 
 						if (nCol == minCol)
 						{
@@ -2472,14 +2472,14 @@ CString CMainView::GetItemText(CColor & aMeasure, double YWhite, CColor & aRefer
 					str.Format("%.1f",aMeasure.GetDeltaE ( YWhite, aReference, RefWhite, bRef, GetConfig()->m_dE_form, false, GetConfig()->m_GammaOffsetType == 5?3:GetConfig()->gw_Weight ) );
 					dE=aMeasure.GetDeltaE ( YWhite, aReference, RefWhite, bRef, GetConfig()->m_dE_form, false, GetConfig()->m_GammaOffsetType == 5?3:GetConfig()->gw_Weight );
 					dL=aMeasure.GetDeltaLCH ( YWhite, aReference, RefWhite, bRef, GetConfig()->m_dE_form, false, GetConfig()->m_GammaOffsetType == 5?3:GetConfig()->gw_Weight, dC, dH );
-                    dEvector.push_back(isNan(dE)?dEavg:dE);
-                    dLvector.push_back(isNan(dL)?dLavg:dL);
-                    dCvector.push_back(isNan(dC)?dCavg:dC);
-                    dHvector.push_back(isNan(dH)?dHavg:dH);
-                    dEavg+=(isNan(dE)?dEavg:dE);
-					dLavg+=(isNan(dL)?dLavg:dL);
-					dCavg+=(isNan(dC)?dCavg:dC);
-					dHavg+=(isNan(dH)?dHavg:dH);
+                    dEvector.push_back(isNan(dE)?0.0:dE);
+                    dLvector.push_back(isNan(dL)?0.0:dL);
+                    dCvector.push_back(isNan(dC)?0.0:dC);
+                    dHvector.push_back(isNan(dH)?0.0:dH);
+                    dEavg+=(isNan(dE)?0.0:dE);
+					dLavg+=(isNan(dL)?0.0:dL);
+					dCavg+=(isNan(dC)?0.0:dC);
+					dHavg+=(isNan(dH)?0.0:dH);
 
 					if (nCol == minCol)
 					{

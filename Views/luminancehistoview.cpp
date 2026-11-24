@@ -363,7 +363,8 @@ void CLuminanceGrapher::AddPointtoLumGraph(int ColorSpace,int ColorIndex,int Siz
 	LPCSTR	lpMsg = NULL;
 	if (pDataSet->GetMeasure()->GetGray(PointIndex).isValid())
 	{
-		pDataSet->GetMeasure()->SetGray(Size-1, pDataSet->GetMeasure()->GetOnOffWhite());
+		// (drawing must not change the measures: the 100% gray was overwritten here with the
+		// on/off contrast white, which changed gamma and gray dE after a contrast measurement)
 
 		if (ColorSpace == 0) 
 		{

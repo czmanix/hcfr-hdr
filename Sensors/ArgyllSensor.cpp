@@ -344,8 +344,10 @@ CColor CArgyllSensor::MeasureColorInternal(const ColorRGBDisplay& aRGBValue, int
         {
             state = m_meter->takeReading(m_SpectralType);
         }
-        catch(std::logic_error&)
+        catch(std::logic_error& e)
         {
+            SetErrorString(e.what());
+            SetMeasureValidity(FALSE);
             return noDataColor;
         }
         if(state == ArgyllMeterWrapper::NEEDS_MANUAL_CALIBRATION)

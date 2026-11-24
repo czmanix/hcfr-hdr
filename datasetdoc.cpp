@@ -1936,16 +1936,17 @@ void CDataSetDoc::OnCalibrationManual()
         CRefColorDlg dlg;
 		if ( dlg.DoModal () == IDOK )
 		{
-			// Create calibration data
+			// Create calibration data: this meter's readings are corrected to the reference colorimeter
+			// values typed in the dialog (they were swapped, which inverted the correction)
             ColorXYZ measures[3] = {
-                                        dlg.m_RedColor.GetXYZValue(),
-                                        dlg.m_GreenColor.GetXYZValue(),
-                                        dlg.m_BlueColor.GetXYZValue()
-                                    };
-            ColorXYZ references[3] = {
                                         measuredColor[0].GetXYZValue(),
                                         measuredColor[1].GetXYZValue(),
                                         measuredColor[2].GetXYZValue()
+                                    };
+            ColorXYZ references[3] = {
+                                        dlg.m_RedColor.GetXYZValue(),
+                                        dlg.m_GreenColor.GetXYZValue(),
+                                        dlg.m_BlueColor.GetXYZValue()
                                     };
 
             ColorXYZ whiteRef = dlg.m_WhiteColor.GetXYZValue();
@@ -4280,7 +4281,9 @@ void CDataSetDoc::ComputeGammaAndOffset(double * Gamma, double * Offset, int Col
 				{
 					int mode = GetConfig()->m_GammaOffsetType;
 					if (GetConfig()->m_colorStandard == sRGB) mode = 99;
-                    if (m_bBT1886 || mode > 5) // !GetConfig()->m_useMeasuredGamma)
+                    // HDR curves (HLG, Dolby Vision) have no measured power gamma: the target is averaged;
+                    // sRGB (99) and L* (6) average the measured gamma like the other SDR curves
+                    if (m_bBT1886 || mode == 7 || mode == 8) // !GetConfig()->m_useMeasuredGamma)
                         avg += log(getL_EOTF(valx[i], GetMeasure()->GetGray(Size -1), GetMeasure()->GetGray(0), GetConfig()->m_GammaRel, GetConfig()->m_Split, mode, GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1))/log(valx[i]);
                     else
 	                    if (mode == 5)// && !GetConfig()->m_useMeasuredGamma)

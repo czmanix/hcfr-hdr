@@ -122,11 +122,22 @@ BOOL CSensor::Release()
 CColor CSensor::MeasureColor(const ColorRGBDisplay& aRGBValue, int displaymode)
 {
 	CColor result;
+	SetMeasureValidity(TRUE);	// MeasureColorInternal may report a failure with its own message
 	if (this->GetName() == "Simulated sensor")
 	    result = MeasureColorInternal(aRGBValue, displaymode);
 	else
 		result = MeasureColorInternal(aRGBValue);
 	
+	// a failed reading stays invalid (it was clamped to a valid near-zero colour before, and
+	// stored as a black measure with no error shown): the measure loops ask Abort/Retry/Ignore
+	if (!result.isValid())
+	{
+		if (IsMeasureValid())
+			SetErrorString("The meter reading failed (meter saturated, disconnected or not calibrated).");
+		SetMeasureValidity(FALSE);
+		return result;
+	}
+
 	result.SetX(max(result.GetX(),0.00000001));
 	result.SetY(max(result.GetY(),0.00000001));
 	result.SetZ(max(result.GetZ(),0.00000001));

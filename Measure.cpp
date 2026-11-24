@@ -4939,39 +4939,8 @@ BOOL CMeasure::MeasureContrast(CSensor *pSensor, CGenerator *pGenerator)
 					}
 				}
 
-				if ( bUseLuxValues && ! bEscape )
-				{
-					int		nNbLoops = 0;
-					BOOL	bContinue;
-					
-					// Measuring black: ask and reask luxmeter value until it stabilizes
-					do
-					{
-						bContinue = FALSE;
-						nNbLoops ++;
-						
-						StartLuxMeasure ();
-						
-						switch ( GetLuxMeasure ( & dLuxValue ) )
-						{
-							case LUX_NOMEASURE:
-								 bUseLuxValues = FALSE;
-								 break;
-
-							case LUX_OK:
-								 if ( dLuxValue < measuredLux[3] )
-								 {
-									measuredLux[3] = dLuxValue;
-									bContinue = TRUE;
-								 }
-								 break;
-
-							case LUX_CANCELED:
-								 bEscape = TRUE;
-								 break;
-						}
-					} while ( bContinue && nNbLoops < 10 );
-				}
+				// (white: the first luxmeter value is kept; the black stabilization loop that kept the
+				// lowest of up to 10 readings was applied here too and lowered the ANSI white)
 
 				while ( PeekMessage ( & Msg, NULL, WM_KEYDOWN, WM_KEYUP, TRUE ) )
 				{
@@ -5249,6 +5218,10 @@ void CMeasure::ApplySensorAdjustmentMatrix(const Matrix& aMatrix)
 	for(int i=0;i<3;i++)
 	{
 		m_secondariesArray[i].applyAdjustmentMatrix(aMatrix);
+	}
+	for(int i=0;i<m_measurementsArray.GetSize();i++)  // free measures follow the new sensor matrix too
+	{
+		m_measurementsArray[i].applyAdjustmentMatrix(aMatrix);
 	}
 	
 	if (!m_bOverRideBlack)
@@ -7361,7 +7334,7 @@ void CMeasure::GetRefCC24Sat(int i, CColor& ccRef) const
 			g = getL_EOTF(qg,White,Black,GetConfig()->m_GammaRel, GetConfig()->m_Split, mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) / (mode==5?100.:1.0);
 			b = getL_EOTF(qb,White,Black,GetConfig()->m_GammaRel, GetConfig()->m_Split, mode,GetConfig()->m_DiffuseL, GetConfig()->m_MasterMinL, GetConfig()->m_MasterMaxL, GetConfig()->m_TargetMinL, GetConfig()->m_TargetMaxL,GetConfig()->m_useToneMap, FALSE, GetConfig()->m_TargetSysGamma, GetConfig()->m_BT2390_BS, GetConfig()->m_BT2390_WS, GetConfig()->m_BT2390_WS1) / (mode==5?100.:1.0);
 		}
-		if ( mode == 6 || mode == 4 || mode == 8 )
+		if ( mode == 6 || mode == 4 || mode == 8 || mode == 99 )	// 99: sRGB curve (as in GetRefSat)
 		{
 			qr = (r==0)?0:pow(r, 1.0 / 2.22);
 			qg = (g==0)?0:pow(g, 1.0 / 2.22);

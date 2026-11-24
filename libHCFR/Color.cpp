@@ -110,7 +110,7 @@ UVT uvt[31] = {
         {0.22511, 0.33439, -1.4512},
         {0.23247, 0.33904, -1.7298},
         {0.24010, 0.34308, -2.0637},
-        {0.24702, 0.34655, -2.4681},
+        {0.24792, 0.34655, -2.4681},
         {0.25591, 0.34951, -2.9641},
         {0.26400, 0.35200, -3.5814},
         {0.27218, 0.35407, -4.3633},
@@ -1240,7 +1240,7 @@ double ColorXYZ::GetDeltaLCH(double YWhite, const ColorXYZ& refColor, double YWh
 			double dC2 = pow ((C1-C2),2.0);
 			double da2 = pow (LabRef[1] - Lab[1],2.0);
 			double db2 = pow (LabRef[2] - Lab[2],2.0);
-			double dH2 =  (da2 + db2 - dC2);
+			double dH2 =  max(da2 + db2 - dC2, 0.0);	// mathematically >= 0, rounding can make it slightly negative (NaN)
 			//kl=kc=kh=1
 //			dE = sqrt ( dL2 + dC2/pow((1+0.045*C1),2.0) + dH2/pow((1+0.015*C1),2.0) );
 			dLight = sqrt(dL2);
@@ -1378,9 +1378,10 @@ double ColorXYZ::GetDeltaLCH(double YWhite, const ColorXYZ& refColor, double YWh
 				//Color needs to be unnormalized and ref normalized
 				ColorICtCp LMSRef(refColor, YWhite, cRef);
 				ColorICtCp LMS(*this, YWhiteRef, cRef);
-				dLight = sqrt(4 * pow ((LMS[0] - LMSRef[0]),2))*240.;
-				dChrom = sqrt(0.25 * pow((LMS[1] - LMSRef[1]),2))*240.;
-				dHue = sqrt(pow((LMS[2] - LMSRef[2]),2))*240.;
+				// ITU-R BT.2124 components: 720 * dI, 720 * 0.5 dCt, 720 * dCp
+				dLight = fabs(LMS[0] - LMSRef[0]) * 720.;
+				dChrom = fabs(LMS[1] - LMSRef[1]) * 0.5 * 720.;
+				dHue = fabs(LMS[2] - LMSRef[2]) * 720.;
 				break;
 			}
 		}
@@ -1754,7 +1755,7 @@ double ColorXYZ::GetDeltaE(double YWhite, const ColorXYZ& refColor, double YWhit
 			double dC2 = pow ((C1-C2),2.0);
 			double da2 = pow (LabRef[1] - Lab[1],2.0);
 			double db2 = pow (LabRef[2] - Lab[2],2.0);
-			double dH2 =  (da2 + db2 - dC2);
+			double dH2 =  max(da2 + db2 - dC2, 0.0);	// mathematically >= 0, rounding can make it slightly negative (NaN)
 			//kl=kc=kh=1
 			dE = sqrt ( dL2 + dC2/pow((1+0.045*C1),2.0) + dH2/pow((1+0.015*C1),2.0) );
 			break;
@@ -1879,7 +1880,7 @@ double ColorXYZ::GetDeltaE(double YWhite, const ColorXYZ& refColor, double YWhit
 			//Color needs to be unnormalized and ref normalized
 			ColorICtCp ICCRef(refColor, YWhite, cRef);
 			ColorICtCp ICC(*this, YWhiteRef, cRef);
-			dE = sqrt ( 4 * pow ((ICC[0] - ICCRef[0]),2) + 0.25 * pow((ICC[1] - ICCRef[1]),2) + pow((ICC[2] - ICCRef[2]),2) ) * 240.; //normalization per Pytlarz
+			dE = sqrt ( pow ((ICC[0] - ICCRef[0]),2) + 0.25 * pow((ICC[1] - ICCRef[1]),2) + pow((ICC[2] - ICCRef[2]),2) ) * 720.; // dE ITP, ITU-R BT.2124
 			break;
 		}
 		
@@ -2094,20 +2095,11 @@ ColorICtCp::ColorICtCp(const ColorXYZ& XYZ, double YWhiteRef, CColorReference co
 		double var_Z = XYZ[2] * scaling ;
 		double L,M,S;
 
-		//LMS matrix is normalized to D65 (Von Kries)
-		//BT.2020 RGB to LMS includes 4% cross-talk matrix
-		if (colorReference.m_standard == UHDTV2 || colorReference.m_standard == UHDTV3 || colorReference.m_standard == UHDTV4)
-		{
-			L = 0.3592 * var_X + 0.6976 * var_Y - 0.0358 * var_Z;
-			M = -0.1922 * var_X + 1.1004 * var_Y + 0.0755 * var_Z;
-			S = 0.0070 * var_X + 0.0749 * var_Y + 0.8434 * var_Z;
-		}
-		else //no cross-talk
-		{
-			L = 0.4002 * var_X + 0.7076 * var_Y - 0.0808 * var_Z;
-			M = -0.2263 * var_X + 1.653 * var_Y + 0.0457 * var_Z;
-			S = 0.0 * var_X + 0.0 * var_Y + 0.9182 * var_Z;
-		}
+		// ICtCp is defined by ITU-R BT.2100 (and dE ITP by BT.2124) with the BT.2100 LMS matrix
+		// (BT.2020 RGB to LMS with 4% cross-talk) for every colour standard
+		L = 0.3592 * var_X + 0.6976 * var_Y - 0.0358 * var_Z;
+		M = -0.1922 * var_X + 1.1004 * var_Y + 0.0755 * var_Z;
+		S = 0.0070 * var_X + 0.0749 * var_Y + 0.8434 * var_Z;
 
 		L = min(max(L,0),10000.);
 		M = min(max(M,0),10000.);
@@ -2166,7 +2158,7 @@ ColorLMS::ColorLMS(const ColorXYZ& XYZ, double YWhiteRef, CColorReference colorR
 		else //no cross-talk
 		{
 			L = 0.4002 * var_X + 0.7076 * var_Y - 0.0808 * var_Z;
-			M = -0.2263 * var_X + 1.653 * var_Y + 0.0457 * var_Z;
+			M = -0.2263 * var_X + 1.1653 * var_Y + 0.0457 * var_Z;
 			S = 0.0 * var_X + 0.0 * var_Y + 0.9182 * var_Z;
 		}
 
@@ -2225,9 +2217,9 @@ ColorLuv::ColorLuv(const ColorXYZ& XYZ, double YWhiteRef, CColorReference colorR
             var_Y = (kappa * var_Y + 16.0)/116.0;
         }
         ColorxyY xyY(XYZ);
-        double u = 4.0*xyY[0] / (-2.0*xyY[0] + 12.0*xyY[0] + 3.0); 
+        double u = 4.0*xyY[0] / (-2.0*xyY[0] + 12.0*xyY[1] + 3.0); 
         double v = 9.0*xyY[1] / (-2.0*xyY[0] + 12.0*xyY[1] + 3.0);
-        double u_white = 4.0*white[0] / (-2.0*white[0] + 12.0*white[0] + 3.0); 
+        double u_white = 4.0*white[0] / (-2.0*white[0] + 12.0*white[1] + 3.0); 
         double v_white = 9.0*white[1] / (-2.0*white[0] + 12.0*white[1] + 3.0); 
         (*this)[0] = 116.0*var_Y-16.0;	 // CIE-L*
         (*this)[1] = 13.0 * (*this)[0] * (u - u_white);
