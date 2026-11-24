@@ -67,9 +67,11 @@ edited normally. Keep new files ASCII. `.vcxproj` files are UTF-8 with BOM.
 - **MFC doc/view**: `CDataSetDoc` (`datasetdoc.cpp`) owns one sensor (`CSensor`), one generator
   (`CGenerator`) and the measurements (`CMeasure`, `Measure.cpp`). `CMainView` (`Views\MainView.cpp`)
   is the measures grid plus the "Information" pane hosting graph views (`Views\*HistoView`,
-  `CIEChartView`); other graphs open as tabs in `CMultiFrame`. `CMainView::OnSize` uses a
+  `CIEChartView`); other graphs open as tabs in `CMultiFrame`. `CMainView::OnInitialUpdate` calls
+  `InitGrid(true); UpdateGrid();` after `InitSelectedColorGrid()` because `CMainView::OnSize` uses a
   lightweight `ResizeGrid()` under `SetRedraw(FALSE/TRUE)` (do not call `InitGrid`/`UpdateGrid` on
-  resize). `CCIEChartView::OnSize` debounces `MakeBgBitmap` (50 ms) with a fast `StretchBlt` preview.
+  resize). `CCIEChartView::OnSize` debounces `MakeBgBitmap` (50 ms) with a fast `StretchBlt` preview
+  and cancels the pending timer if the size returns to `m_bgSize`.
 - **Sensors** (`Sensors\`): `CArgyllSensor` is the one that matters; it wraps
   `Tools\ArgyllMeterWrapper` over the bundled ArgyllCMS instrument code in `Tools\spectro`
   (Argyll 2.1.1 + later additions such as SpyderX2). Meter detection (`getDetectedMeters`) runs when a
@@ -87,6 +89,13 @@ edited normally. Keep new files ASCII. `.vcxproj` files are UTF-8 with BOM.
   - `CPatternDisplay` (*Additional Patterns*) uses `CGDIGenerator(int, BOOL)` which must **not** call
     `Init()` in its constructor; `BeginPatternDisplay`/`EndPatternDisplay` hide and restore the dialog
     around each fullscreen pattern.
+  - `CFullScreenWindow` uses `CScopedPerMonitorDpi` (dynamically loaded `SetThreadDpiAwarenessContext`
+    with Per-Monitor Aware v2/v1) when creating, positioning (`MoveToMonitor`, clearing `WS_MAXIMIZE`),
+    maximizing, and querying overlay rects so test patterns render in physical pixels of the target
+    monitor across mixed-DPI multi-monitor setups while the rest of the legacy MFC UI stays DPI-unaware.
+  - `CGDIGenerator::GetMonitorName` queries real EDID friendly monitor names via dynamically loaded
+    Windows 7+ DisplayConfig API (`QueryDisplayConfig` / `DisplayConfigGetDeviceInfo`) with
+    `EnumDisplayDevices` fallback; `m_activeMonitorNum` is clamped to `[0, m_monitorNb - 1]`.
   - Raspberry Pi/PGenerator needs `Tools\pi\RB8PGenerator.dll` (32-bit only).
 - **Colour values & HDR reference white**: `ColorRGBDisplay` (`libHCFR\Color.h`) holds percent 0–100
   as doubles; in HDR mode these are PQ signal levels. `GetColorRef()` reduces them to 8 bits (GDI only).
@@ -98,6 +107,11 @@ edited normally. Keep new files ASCII. `.vcxproj` files are UTF-8 with BOM.
   tooltips (`SHOWEFFECT_NONE`, `CS_DROPSHADOW`, direct `BitBlt` fast path without screen capture).
 - **Preferences**: `CColorHCFRConfig` (`ColorHCFRConfig.cpp`). HDR/PQ mode is `GammaOffsetType == 5`
   (ST 2084); colour standards are the `ColorStandard` enum (`UHDTV2` = BT.2020, `UHDTV3` = P3 in BT.2020).
+  `LoadSettings()` sanitizes range-sensitive `.ini` values (`AblFrameFreq`, `HDRRefWhite`, `m_Split`,
+  manual primaries, `m_useCustomColor`).
+- **Windows API / `WINVER`**: `StdAfx.h` defines `WINVER 0x0510`, hiding Win7+/Win10+ declarations in
+  SDK headers. Do not bump `WINVER`; load newer Win32 APIs dynamically via
+  `GetModuleHandle(_T("user32.dll"))` + `GetProcAddress` (and `static_assert` any local struct sizes).
 - **Resources/UI text**: menus, accelerators, dialogs and strings live in each language DLL
   (`CHCFR21_ENGLISH/DEUTSCH/FRANCAIS/ITALIAN/ESPANOL.rc`); a new control/command needs an ID in
   `resource.h` and entries in all five `.rc` files. Pattern images are in `CHCFR21_PATTERNS`.
