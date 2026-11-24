@@ -355,6 +355,8 @@ BOOL CColorHCFRConfig::LoadSettings()
 	m_useHSV=GetProfileInt("References","UseHSV",0);
 	m_latencyTime=GetProfileInt("References","IrisLatencyTime",300);
 	m_ablFreq=GetProfileInt("References","AblFrameFreq",10);
+	if (m_ablFreq < 1 || m_ablFreq > 100)
+		m_ablFreq = 10;
 	m_ablDuration=GetProfileInt("References","AblFrameDuration",500);
 	m_ablLevel=GetProfileInt("References","AblFrameLevel",50);
 	m_bLatencyBeep=GetProfileInt("References","IrisLatencyBeep",0);
@@ -377,6 +379,8 @@ BOOL CColorHCFRConfig::LoadSettings()
 	m_BT2390_WS1=GetProfileDouble("References","BT2390WhiteSlopeFactor1",25);
 	m_DiffuseL=GetProfileDouble("References","DiffuseLValue", 94.37844);
 	m_HDRRefWhite=GetProfileDouble("References","HDRRefWhite", 94.37844);
+	if (!(m_HDRRefWhite >= 10.0 && m_HDRRefWhite <= 1000.0))
+		m_HDRRefWhite = 94.37844;
 	m_GammaRel=GetProfileDouble("References","GammaRelValue",0.0);
 	m_Split=GetProfileDouble("References","GammaSplitValue",100.0);
 	m_ManualBlack=GetProfileDouble("References","Manual Black Level",0.0);

@@ -710,6 +710,8 @@ void CMainView::OnInitialUpdate()
 	( (CMultiFrame *) GetParentFrame () )->CMDIChildWnd::MDIMaximize(); //this maximizes and calls onsize
 
 	InitSelectedColorGrid();
+	InitGrid(true);
+	UpdateGrid();
 
 	UpdateData(FALSE);
 }

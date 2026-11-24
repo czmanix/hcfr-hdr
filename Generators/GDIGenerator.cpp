@@ -205,15 +205,132 @@ void CGDIGenerator::GetMonitorList()
 		m_GDIGenePropertiesPage.m_monitorNameArray.Add(sMonitor.c_str());		
 		m_GDIGenePropertiesPage.m_monitorHandle [ i ] = m_hMonitor [ i ];
 	}
+	if ( m_monitorNb == 0 )
+		m_activeMonitorNum = 0;
+	else if ( m_activeMonitorNum < 0 || m_activeMonitorNum >= (int)m_monitorNb )
+		m_activeMonitorNum = (int)m_monitorNb - 1;
+}
+
+// Queries the real EDID monitor friendly name (e.g. "LG OLED42C2", "DELL U2723QE")
+// via the Windows 7+ DisplayConfig API instead of "Generic PnP Monitor".
+// Declared locally because StdAfx.h sets WINVER 0x0510.
+static std::string GetMonitorFriendlyNameFromDisplayConfig(const char *szGdiDevice)
+{
+	if (!szGdiDevice || !szGdiDevice[0])
+		return std::string();
+
+	HMODULE hUser32 = ::GetModuleHandle(_T("user32.dll"));
+	if (!hUser32)
+		return std::string();
+
+	struct DC_PATH_SOURCE_INFO { LUID adapterId; UINT32 id; UINT32 modeInfoIdx; UINT32 statusFlags; };
+	struct DC_PATH_TARGET_INFO {
+		LUID adapterId; UINT32 id; UINT32 modeInfoIdx;
+		UINT32 outputTechnology; UINT32 rotation; UINT32 scaling;
+		UINT32 refreshNum; UINT32 refreshDen;
+		UINT32 scanLineOrdering; BOOL targetAvailable; UINT32 statusFlags;
+	};
+	struct DC_PATH_INFO { DC_PATH_SOURCE_INFO sourceInfo; DC_PATH_TARGET_INFO targetInfo; UINT32 flags; };
+	struct DC_MODE_INFO { UINT64 raw[8]; };
+	struct DC_DEVICE_INFO_HEADER { UINT32 type; UINT32 size; LUID adapterId; UINT32 id; };
+	struct DC_SOURCE_DEVICE_NAME { DC_DEVICE_INFO_HEADER header; WCHAR viewGdiDeviceName[CCHDEVICENAME]; };
+	struct DC_TARGET_DEVICE_NAME {
+		DC_DEVICE_INFO_HEADER header;
+		UINT32 flags; UINT32 outputTechnology;
+		UINT16 edidManufactureId; UINT16 edidProductCodeId; UINT32 connectorInstance;
+		WCHAR monitorFriendlyDeviceName[64];
+		WCHAR monitorDevicePath[128];
+	};
+	static_assert(sizeof(DC_PATH_INFO) == 72, "DISPLAYCONFIG_PATH_INFO size");
+	static_assert(sizeof(DC_MODE_INFO) == 64, "DISPLAYCONFIG_MODE_INFO size");
+	static_assert(sizeof(DC_SOURCE_DEVICE_NAME) == 84, "DISPLAYCONFIG_SOURCE_DEVICE_NAME size");
+	static_assert(sizeof(DC_TARGET_DEVICE_NAME) == 420, "DISPLAYCONFIG_TARGET_DEVICE_NAME size");
+
+	typedef LONG (WINAPI *PFN_GetDisplayConfigBufferSizes)(UINT32, UINT32 *, UINT32 *);
+	typedef LONG (WINAPI *PFN_QueryDisplayConfig)(UINT32, UINT32 *, DC_PATH_INFO *, UINT32 *, DC_MODE_INFO *, UINT32 *);
+	typedef LONG (WINAPI *PFN_DisplayConfigGetDeviceInfo)(DC_DEVICE_INFO_HEADER *);
+
+	PFN_GetDisplayConfigBufferSizes pfnGetSizes = (PFN_GetDisplayConfigBufferSizes)::GetProcAddress(hUser32, "GetDisplayConfigBufferSizes");
+	PFN_QueryDisplayConfig pfnQuery = (PFN_QueryDisplayConfig)::GetProcAddress(hUser32, "QueryDisplayConfig");
+	PFN_DisplayConfigGetDeviceInfo pfnGetInfo = (PFN_DisplayConfigGetDeviceInfo)::GetProcAddress(hUser32, "DisplayConfigGetDeviceInfo");
+	if (!pfnGetSizes || !pfnQuery || !pfnGetInfo)
+		return std::string();
+
+	const UINT32 kQdcOnlyActivePaths = 0x00000002;
+	const UINT32 kGetSourceName = 1;
+	const UINT32 kGetTargetName = 2;
+
+	WCHAR wzTargetDevice[CCHDEVICENAME] = { 0 };
+	if (::MultiByteToWideChar(CP_ACP, 0, szGdiDevice, -1, wzTargetDevice, CCHDEVICENAME) == 0)
+		return std::string();
+
+	std::vector<DC_PATH_INFO> paths;
+	std::vector<DC_MODE_INFO> modes;
+	UINT32 pathCount = 0, modeCount = 0;
+	LONG rc = ERROR_SUCCESS;
+	for (int attempt = 0; attempt < 3; ++attempt)
+	{
+		rc = pfnGetSizes(kQdcOnlyActivePaths, &pathCount, &modeCount);
+		if (rc != ERROR_SUCCESS || pathCount == 0)
+			return std::string();
+		paths.resize(pathCount);
+		modes.resize(modeCount);
+		rc = pfnQuery(kQdcOnlyActivePaths, &pathCount, &paths[0], &modeCount, modeCount ? &modes[0] : NULL, NULL);
+		if (rc == ERROR_SUCCESS)
+			break;
+		if (rc != ERROR_INSUFFICIENT_BUFFER)
+			return std::string();
+	}
+	if (rc != ERROR_SUCCESS)
+		return std::string();
+
+	for (UINT32 i = 0; i < pathCount; ++i)
+	{
+		DC_SOURCE_DEVICE_NAME srcName;
+		ZeroMemory(&srcName, sizeof(srcName));
+		srcName.header.type = kGetSourceName;
+		srcName.header.size = sizeof(srcName);
+		srcName.header.adapterId = paths[i].sourceInfo.adapterId;
+		srcName.header.id = paths[i].sourceInfo.id;
+		if (pfnGetInfo(&srcName.header) != ERROR_SUCCESS)
+			continue;
+		if (_wcsicmp(srcName.viewGdiDeviceName, wzTargetDevice) != 0)
+			continue;
+
+		DC_TARGET_DEVICE_NAME tgtName;
+		ZeroMemory(&tgtName, sizeof(tgtName));
+		tgtName.header.type = kGetTargetName;
+		tgtName.header.size = sizeof(tgtName);
+		tgtName.header.adapterId = paths[i].targetInfo.adapterId;
+		tgtName.header.id = paths[i].targetInfo.id;
+		if (pfnGetInfo(&tgtName.header) != ERROR_SUCCESS)
+			continue;
+		if (tgtName.monitorFriendlyDeviceName[0] == L'\0')
+			continue;
+
+		char szFriendly[128] = { 0 };
+		int n = ::WideCharToMultiByte(CP_ACP, 0, tgtName.monitorFriendlyDeviceName, -1, szFriendly, sizeof(szFriendly), NULL, NULL);
+		if (n > 1)
+		{
+			std::string result(szFriendly);
+			while (!result.empty() && (result[result.size() - 1] == ' ' || result[result.size() - 1] == '\t'))
+				result.erase(result.size() - 1);
+			if (!result.empty())
+				return result;
+		}
+	}
+	return std::string();
 }
 
 std::string CGDIGenerator::GetMonitorName(const MONITORINFOEX *m) const
 {
-	// Windows is a little ugly about how it handles monitors. ColorHCFR uses a HMONITOR in operations to write to the
-	// screen. However, the EnumDisplayMonitors() function that returns the HMONITOR handle does not return a friendly name
-	// for the monitor. The function that DOES return the friendly name for the monitor, EnumDisplayDevices() on the 
-	// other hand, does not return a HMONITOR. So we need to call first EnumDisplayMonitors() to get the handle, and then call
-	// EnumDisplayDevices() to find the friendly monitor name.
+	// Prefer the real EDID friendly name from QueryDisplayConfig; fall back to EnumDisplayDevices
+	if (m)
+	{
+		std::string sFriendly = GetMonitorFriendlyNameFromDisplayConfig(m->szDevice);
+		if (!sFriendly.empty())
+			return sFriendly;
+	}
 
 	DISPLAY_DEVICE  dd, dm;
     
@@ -293,6 +410,8 @@ void CGDIGenerator::Serialize(CArchive& archive)
 		archive >> m_displayWindow.m_bgStimPercent;
 		archive >> m_displayWindow.m_Intensity;
 		archive >> m_activeMonitorNum;
+		if ( m_monitorNb > 0 && ( m_activeMonitorNum < 0 || m_activeMonitorNum >= (int)m_monitorNb ) )
+			m_activeMonitorNum = (int)m_monitorNb - 1;
 		if ( version > 1 )
 		{
 			int m_cDisplayMode = m_nDisplayMode;
@@ -477,7 +596,7 @@ BOOL CGDIGenerator::Init(UINT nbMeasure, bool isSpecial)
 
 	m_displayWindow.SetDisplayMode(m_nDisplayMode);
 	m_displayWindow.SetRGBScale(m_b16_235);
-	m_displayWindow.MoveToMonitor(m_hMonitor[m_activeMonitorNum]);
+	m_displayWindow.MoveToMonitor(m_monitorNb > 0 ? m_hMonitor[m_activeMonitorNum] : NULL);
 
 	// HDR10 in the GDI display modes: the pattern window draws through Direct3D 11 itself
 	// (10-bit BT.2020/PQ swap chain, Windows HDR must be on). libHDR is not used then.
@@ -1392,5 +1511,7 @@ BOOL CGDIGenerator::Release(INT nbNext)
 
 CString CGDIGenerator::GetActiveDisplayName() 
 { 
-	return m_GDIGenePropertiesPage.m_monitorNameArray[m_activeMonitorNum];
+	if ( m_activeMonitorNum >= 0 && m_activeMonitorNum < (int)m_GDIGenePropertiesPage.m_monitorNameArray.GetSize() )
+		return m_GDIGenePropertiesPage.m_monitorNameArray[m_activeMonitorNum];
+	return CString();
 }

@@ -2666,6 +2666,11 @@ void CCIEChartView::OnSize(UINT nType, int cx, int cy)
 			m_bResizePending = TRUE;
 			SetTimer(1001, 50, NULL);
 		}
+		else if ( m_bResizePending )
+		{
+			KillTimer(1001);
+			m_bResizePending = FALSE;
+		}
 	}
 	Invalidate(FALSE);
 }

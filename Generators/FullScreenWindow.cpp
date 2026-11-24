@@ -44,6 +44,44 @@
 
 #define ANSI_CONTRAST_BLOCKS	5
 
+// Temporarily switches the calling thread to Per-Monitor DPI awareness so the
+// fullscreen pattern window is created, positioned and sized in physical pixels
+// of its target monitor instead of being DPI-virtualized by the main UI monitor.
+class CScopedPerMonitorDpi
+{
+public:
+	CScopedPerMonitorDpi() : m_pfnSet(NULL), m_hPrev(NULL)
+	{
+		HMODULE hUser32 = ::GetModuleHandle(_T("user32.dll"));
+		if (hUser32)
+		{
+			m_pfnSet = (PFN_SetThreadDpiAwarenessContext)::GetProcAddress(hUser32, "SetThreadDpiAwarenessContext");
+			if (m_pfnSet)
+			{
+				// DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = (HANDLE)-4 (Win10 1703+)
+				// DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE    = (HANDLE)-3 (Win10 1607+)
+				m_hPrev = m_pfnSet((HANDLE)(INT_PTR)-4);
+				if (!m_hPrev)
+					m_hPrev = m_pfnSet((HANDLE)(INT_PTR)-3);
+			}
+		}
+	}
+
+	~CScopedPerMonitorDpi()
+	{
+		if (m_pfnSet && m_hPrev)
+			m_pfnSet(m_hPrev);
+	}
+
+private:
+	typedef HANDLE (WINAPI *PFN_SetThreadDpiAwarenessContext)(HANDLE);
+	PFN_SetThreadDpiAwarenessContext m_pfnSet;
+	HANDLE m_hPrev;
+
+	CScopedPerMonitorDpi(const CScopedPerMonitorDpi&);
+	CScopedPerMonitorDpi& operator=(const CScopedPerMonitorDpi&);
+};
+
 std::vector<CString> patterns;
 std::vector<int> patternsID;
 
@@ -106,18 +144,21 @@ CFullScreenWindow::CFullScreenWindow(BOOL bTestOverlay)
 	m_uiPictRess = 0;
 	m_bResizePict = FALSE;
 
-	// Create window
-	hDesktop = ::GetDesktopWindow ();
-	::GetWindowRect ( hDesktop, & rect );
-
-	if ( m_bTestOverlay )
+	// Create window in Per-Monitor DPI context so it renders at native monitor pixels
 	{
-		rect.left = rect.right - OVERLAY_SMALL_WIDTH;
-		rect.bottom = rect.top + OVERLAY_SMALL_HEIGHT;
-	}
+		CScopedPerMonitorDpi dpiScope;
+		hDesktop = ::GetDesktopWindow ();
+		::GetWindowRect ( hDesktop, & rect );
 
-	hWnd = ::CreateWindowEx ( WS_EX_TOOLWINDOW, AfxRegisterWndClass ( 0, ::LoadCursor(NULL,IDC_ARROW) ), "", WS_POPUP, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, NULL, (HMENU) NULL, GetModuleHandle ( NULL ), NULL );
-	SubclassWindow ( hWnd );
+		if ( m_bTestOverlay )
+		{
+			rect.left = rect.right - OVERLAY_SMALL_WIDTH;
+			rect.bottom = rect.top + OVERLAY_SMALL_HEIGHT;
+		}
+
+		hWnd = ::CreateWindowEx ( WS_EX_TOOLWINDOW, AfxRegisterWndClass ( 0, ::LoadCursor(NULL,IDC_ARROW) ), "", WS_POPUP, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, NULL, (HMENU) NULL, GetModuleHandle ( NULL ), NULL );
+		SubclassWindow ( hWnd );
+	}
 	
 	patternsID.push_back(IDR_PATTERN_TESTIMG); 
 	patterns.push_back("skintonep.png");	
@@ -305,34 +346,42 @@ void CFullScreenWindow::MoveToMonitor ( HMONITOR hMon )
 	HWND			hDesktop;
 	MONITORINFO		mi;
 
-	if ( hMon )
 	{
-		m_hCurrentMon = hMon;
+		CScopedPerMonitorDpi dpiScope;
 
-		mi.cbSize = sizeof ( mi );
-		GetMonitorInfo ( hMon, & mi );
+		if ( hMon )
+		{
+			m_hCurrentMon = hMon;
 
-		m_ptMonitorPos.x = mi.rcMonitor.left;
-		m_ptMonitorPos.y = mi.rcMonitor.top;
+			mi.cbSize = sizeof ( mi );
+			GetMonitorInfo ( hMon, & mi );
+
+			m_ptMonitorPos.x = mi.rcMonitor.left;
+			m_ptMonitorPos.y = mi.rcMonitor.top;
+		}
+		else
+		{
+			m_hCurrentMon = NULL;
+
+			hDesktop = ::GetDesktopWindow ();
+			::GetWindowRect ( hDesktop, & mi.rcMonitor );
+
+			m_ptMonitorPos.x = 0;
+			m_ptMonitorPos.y = 0;
+		}
+
+		if ( m_bTestOverlay )
+		{
+			mi.rcMonitor.left = mi.rcMonitor.right - OVERLAY_SMALL_WIDTH;
+			mi.rcMonitor.bottom = mi.rcMonitor.top + OVERLAY_SMALL_HEIGHT;
+		}
+
+		// Clear WS_MAXIMIZE so a previous maximize on another monitor does not override the new rect
+		if ( GetStyle () & WS_MAXIMIZE )
+			ModifyStyle ( WS_MAXIMIZE, 0 );
+
+		SetWindowPos ( NULL, mi.rcMonitor.left, mi.rcMonitor.top, mi.rcMonitor.right - mi.rcMonitor.left, mi.rcMonitor.bottom - mi.rcMonitor.top, SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOZORDER );
 	}
-	else
-	{
-		m_hCurrentMon = NULL;
-
-		hDesktop = ::GetDesktopWindow ();
-		::GetWindowRect ( hDesktop, & mi.rcMonitor );
-
-		m_ptMonitorPos.x = 0;
-		m_ptMonitorPos.y = 0;
-	}
-
-	if ( m_bTestOverlay )
-	{
-		mi.rcMonitor.left = mi.rcMonitor.right - OVERLAY_SMALL_WIDTH;
-		mi.rcMonitor.bottom = mi.rcMonitor.top + OVERLAY_SMALL_HEIGHT;
-	}
-	
-	SetWindowPos ( NULL, mi.rcMonitor.left, mi.rcMonitor.top, mi.rcMonitor.right - mi.rcMonitor.left, mi.rcMonitor.bottom - mi.rcMonitor.top, SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOZORDER );
 	
 	if ( m_bTestOverlay || m_nDisplayMode == DISPLAY_OVERLAY )
 	{
@@ -522,11 +571,14 @@ void CFullScreenWindow::DisplayRGBColorInternal(COLORREF clr, BOOL bDisableWaiti
 
 	if ( ! IsWindowVisible () )
 	{
-		ShowWindow ( SW_SHOWMAXIMIZED );
-		if ( ! m_bTestOverlay )
 		{
-			ModifyStyleEx ( 0, WS_EX_TOPMOST );
-			BringWindowToTop ();
+			CScopedPerMonitorDpi dpiScope;
+			ShowWindow ( SW_SHOWMAXIMIZED );
+			if ( ! m_bTestOverlay )
+			{
+				ModifyStyleEx ( 0, WS_EX_TOPMOST );
+				BringWindowToTop ();
+			}
 		}
 
 		if ( m_nDisplayMode == DISPLAY_OVERLAY )
@@ -1660,7 +1712,7 @@ void video_scale (CxImage *inImage)
 			//static pattern detection avoidance
 			m_nPat++;
 
-			if ((m_nPat % GetConfig()->m_ablFreq) == 0 && GetConfig()->m_bABL)
+			if (GetConfig()->m_bABL && GetConfig()->m_ablFreq > 0 && (m_nPat % GetConfig()->m_ablFreq) == 0)
 			{
 				if (m_nDisplayMode != DISPLAY_GDI_nBG)
 				{
@@ -2317,7 +2369,7 @@ BOOL CFullScreenWindow::PaintHdr10(const CRect& rect, BOOL isSpecial, double bgs
 
 	// static pattern detection avoidance
 	m_nPat++;
-	if ( ( m_nPat % GetConfig () -> m_ablFreq ) == 0 && GetConfig () -> m_bABL )
+	if ( GetConfig () -> m_bABL && GetConfig () -> m_ablFreq > 0 && ( m_nPat % GetConfig () -> m_ablFreq ) == 0 )
 	{
 		double lvl = GetConfig () -> m_ablLevel / 100.;
 		if ( m_nDisplayMode == DISPLAY_GDI_nBG )
@@ -2654,7 +2706,10 @@ void CFullScreenWindow::SetOverlayPosition ()
 	char			szMsg [ 256 ];
 	char			szError [ 256 ];
 
-	GetWindowRect ( &rect );
+	{
+		CScopedPerMonitorDpi dpiScope;
+		GetWindowRect ( &rect );
+	}
 
 	// Translate window position from desktop coordinates to monitor (primary surface) coordinates
 	rect.left -= m_ptMonitorPos.x;
