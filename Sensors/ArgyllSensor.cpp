@@ -46,6 +46,15 @@ char *m_logFile;
 
 IMPLEMENT_SERIAL(CArgyllSensor, COneDeviceSensor, 1) ;
 
+// Integration time is a combo index 0..6 ("Argyll Default [0.2 sec]" .. "1.0 sec").
+// Files read with the old field order gave garbage (e.g. 256), which the property
+// page then saved as -1 (no selection) into the ini and new measures; that silently
+// measured with the 0.2 s Argyll default. Fall back to "Best [0.5 sec]".
+static UINT SanitizeIntTime(UINT intTime)
+{
+    return (intTime <= 6) ? intTime : 1;
+}
+
 CArgyllSensor::CArgyllSensor() :
     m_DisplayType(0),
     m_ReadingType(0),
@@ -84,7 +93,7 @@ CArgyllSensor::CArgyllSensor(ArgyllMeterWrapper* meter) :
     m_DisplayType = GetConfig()->GetProfileInt(meterName.c_str(), "DisplayType", 0);
     m_ReadingType = GetConfig()->GetProfileInt(meterName.c_str(), "ReadingType", 0);
     m_SpectralType = GetConfig()->GetProfileString(meterName.c_str(), "SpectralType", "Default");
-    m_intTime = GetConfig()->GetProfileInt(meterName.c_str(), "IntTime", 1);
+    m_intTime = SanitizeIntTime(GetConfig()->GetProfileInt(meterName.c_str(), "IntTime", 1));
     m_debugMode = GetConfig()->GetProfileInt(meterName.c_str(), "DebugMode", 0) != 0;
     m_HiRes = GetConfig()->GetProfileInt(meterName.c_str(), "HiRes", 0);
 
@@ -181,7 +190,10 @@ void CArgyllSensor::Serialize(CArchive& archive)
         archive >> m_debugMode;
         archive >> m_HiRes;
         if ( version > 2)
+        {
             archive >> m_intTime;
+            m_intTime = SanitizeIntTime(m_intTime);
+        }
         if ( version > 3)
             archive >> m_Adapt;
 
@@ -261,7 +273,7 @@ void CArgyllSensor::GetPropertiesSheetValues()
         m_SpectralType=m_ArgyllSensorPropertiesPage.m_SpectralType;
         m_DisplayType=m_ArgyllSensorPropertiesPage.m_DisplayType;
         m_HiRes = m_ArgyllSensorPropertiesPage.m_HiRes;
-        m_intTime=m_ArgyllSensorPropertiesPage.m_intTime;
+        m_intTime=SanitizeIntTime(m_ArgyllSensorPropertiesPage.m_intTime);
         m_Adapt=m_ArgyllSensorPropertiesPage.m_Adapt;
 
         GetConfig()->WriteProfileInt(meterName.c_str(), "ReadingType", m_ReadingType );
