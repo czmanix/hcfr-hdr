@@ -37,6 +37,43 @@
 #include <string>
 #include <float.h>
 
+// "disable video LUT": run Argyll dispwin.exe (Tools folder next to the exe) and wait
+// for it. The old code used ShellExecute without waiting and with unquoted paths, and
+// saved the LUT into the program folder (not writable under Program Files without
+// admin), so the save failed and the LUT was cleared but never restored.
+static BOOL RunDispwin(const CString& args)
+{
+	CString exe = CString(GetConfig()->m_ApplicationPath) + "\\Tools\\dispwin.exe";
+	if (GetFileAttributes(exe) == INVALID_FILE_ATTRIBUTES)
+		return FALSE;
+	CString cmd = "\"" + exe + "\" " + args;
+	STARTUPINFO si;
+	PROCESS_INFORMATION pi;
+	ZeroMemory(&si, sizeof(si));
+	si.cb = sizeof(si);
+	si.dwFlags = STARTF_USESHOWWINDOW;
+	si.wShowWindow = SW_HIDE;
+	BOOL ok = CreateProcess(NULL, cmd.GetBuffer(), NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
+	cmd.ReleaseBuffer();
+	if (!ok)
+		return FALSE;
+	DWORD exitCode = 1;
+	if (WaitForSingleObject(pi.hProcess, 15000) == WAIT_OBJECT_0)
+		GetExitCodeProcess(pi.hProcess, &exitCode);
+	CloseHandle(pi.hThread);
+	CloseHandle(pi.hProcess);
+	return exitCode == 0;
+}
+
+static CString SavedVideoLutPath()
+{
+	char tempDir[MAX_PATH];
+	if (!GetTempPath(MAX_PATH, tempDir))
+		strcpy(tempDir, ".\\");
+	return CString(tempDir) + "HCFR_saved_video_lut.cal";
+}
+
+
 #ifdef _DEBUG
 #undef THIS_FILE
 static char THIS_FILE[]=__FILE__;
@@ -581,17 +618,26 @@ BOOL CGDIGenerator::Init(UINT nbMeasure, bool isSpecial)
 	m_nDisplayMode =  		GetConfig()->GetProfileInt("GDIGenerator","DisplayMode", DISPLAY_DEFAULT_MODE);
 	if (!m_bConnect && m_bLinear) //linear gamma tables
 	{
-		char arg[255];
-		CString str = GetConfig () -> m_ApplicationPath;
-		CString str1 = GetConfig () -> m_ApplicationPath;
-		str += "\\tools\\dispwin.exe";
-		str1 += "\\tools\\current.cal";
-		sprintf(arg," -d%d -s " + str1, m_activeMonitorNum+1);
-		ShellExecute(NULL, "open", str, arg, NULL, SW_HIDE);
-		Sleep(100);
-		sprintf(arg," -d%d -c", m_activeMonitorNum+1);
-		ShellExecute(NULL, "open", str, arg, NULL, SW_HIDE);
-		m_bConnect = TRUE;
+		// save the current video LUT first; clear it only if it can be restored afterwards
+		CString cal = SavedVideoLutPath();
+		CString arg;
+		DeleteFile(cal);
+		arg.Format("-d%d -s \"%s\"", m_activeMonitorNum+1, (LPCTSTR)cal);
+		if (RunDispwin(arg))
+		{
+			arg.Format("-d%d -c", m_activeMonitorNum+1);
+			RunDispwin(arg);
+			m_bConnect = TRUE;
+		}
+		else
+		{
+			static bool warned = false;
+			if (!warned)
+			{
+				warned = true;
+				GetColorApp()->InMeasureMessageBox("\"disable video LUT\" is on, but the video LUT could not be saved (Tools\\dispwin.exe missing or failed). The LUT is left unchanged.", "Video LUT", MB_OK|MB_ICONWARNING);
+			}
+		}
 	}
 
 	m_displayWindow.SetDisplayMode(m_nDisplayMode);
@@ -1494,15 +1540,11 @@ BOOL CGDIGenerator::Release(INT nbNext)
 	}
 
 	//restore gamma tables
-	if (m_bConnect && m_bLinear)
+	if (m_bConnect)
 	{
-		char arg[255];
-		CString str = GetConfig () -> m_ApplicationPath;
-		CString str1 = GetConfig () -> m_ApplicationPath;
-		str += "\\tools\\dispwin.exe";
-		str1 += "\\tools\\current.cal";
-		sprintf(arg," -d%d " + str1, m_activeMonitorNum+1);
-		ShellExecute(NULL, "open", str, arg, NULL, SW_HIDE);
+		CString arg;
+		arg.Format("-d%d \"%s\"", m_activeMonitorNum+1, (LPCTSTR)SavedVideoLutPath());
+		RunDispwin(arg);
 		m_bConnect = FALSE;
 	}
 

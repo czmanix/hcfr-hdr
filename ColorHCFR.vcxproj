@@ -344,6 +344,14 @@
       <OutputFile>.\x64\Debug/ColorHCFR.bsc</OutputFile>
     </Bscmake>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup>
+    <PostBuildEvent>
+      <Message>Copy Argyll dispwin.exe (used by "disable video LUT") to $(OutDir)Tools</Message>
+      <Command>if not exist "$(OutDir)Tools" mkdir "$(OutDir)Tools"
+copy /y "$(ProjectDir)Install\dispwin.exe" "$(OutDir)Tools\" &gt;nul
+copy /y "$(ProjectDir)Install\msvcr100.dll" "$(OutDir)Tools\" &gt;nul</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AdvancedPropPage.cpp">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
