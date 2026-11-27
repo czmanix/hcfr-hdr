@@ -129,8 +129,11 @@ CColor CSensor::MeasureColor(const ColorRGBDisplay& aRGBValue, int displaymode)
 		result = MeasureColorInternal(aRGBValue);
 	
 	// a failed reading stays invalid (it was clamped to a valid near-zero colour before, and
-	// stored as a black measure with no error shown): the measure loops ask Abort/Retry/Ignore
-	if (!result.isValid())
+	// stored as a black measure with no error shown): the measure loops ask Abort/Retry/Ignore.
+	// Only noDataColor (FX_NODATA) is a failure: readings are taken unclamped, so a saturated
+	// primary measured with a CCSS/matrix correction can have a component below -1 cd/m2
+	// (e.g. Z of red), which isValid() would reject.
+	if (result.GetX() < FX_NODATA / 2 || result.GetY() < FX_NODATA / 2 || result.GetZ() < FX_NODATA / 2)
 	{
 		if (IsMeasureValid())
 			SetErrorString("The meter reading failed (meter saturated, disconnected or not calibrated).");
